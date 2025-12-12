@@ -184,20 +184,22 @@
       background: #6366f1;
     }
 
-    /* Controls visibility - SHOW BY DEFAULT */
+    /* Controls visibility - HIDDEN BY DEFAULT, SHOW ON INTERACTION */
     .controls-top, .controls-bottom {
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-    .controls-hidden .controls-top,
-    .controls-hidden .controls-bottom {
       opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
     }
-    .player-container:hover .controls-top,
-    .player-container:hover .controls-bottom,
     .player-container.show-controls .controls-top,
     .player-container.show-controls .controls-bottom {
       opacity: 1;
+      pointer-events: auto;
+    }
+    /* Always show when paused */
+    .player-container.paused .controls-top,
+    .player-container.paused .controls-bottom {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     /* Install Banner */
@@ -253,6 +255,15 @@
     /* Hide for PWA class */
     .is-pwa #installBanner { display: none !important; visibility: hidden !important; }
 
+    /* Touch device optimizations */
+    @media (hover: none) and (pointer: coarse) {
+      .ctrl-btn { width: 44px; height: 44px; }
+      .nav-btn { width: 48px; height: 48px; }
+      .seek-bar { height: 6px; }
+      .seek-bar::-webkit-slider-thumb { width: 18px; height: 18px; }
+      .volume-slider { display: none !important; }
+    }
+
     kbd {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -274,7 +285,7 @@
   </div>
 
   <!-- Main Player Container -->
-  <div class="player-container show-controls relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20" id="playerContainer">
+  <div class="player-container relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20" id="playerContainer">
     
     <!-- Video Player -->
     <div id="player" class="w-full h-full"></div>
@@ -498,20 +509,47 @@
     };
 
     // Auto-hide controls after 3 seconds
-    function resetControlsTimer() {
+    function showControls() {
       el.playerContainer.classList.add('show-controls');
-      el.playerContainer.classList.remove('controls-hidden');
       clearTimeout(controlsTimer);
-      controlsTimer = setTimeout(() => {
-        if (isPlaying) {
-          el.playerContainer.classList.remove('show-controls');
-          el.playerContainer.classList.add('controls-hidden');
-        }
-      }, 3000);
+      // Only auto-hide if playing
+      if (isPlaying) {
+        controlsTimer = setTimeout(hideControls, 3000);
+      }
     }
 
-    el.playerContainer.addEventListener('mousemove', resetControlsTimer);
-    el.playerContainer.addEventListener('touchstart', resetControlsTimer);
+    function hideControls() {
+      if (isPlaying) {
+        el.playerContainer.classList.remove('show-controls');
+      }
+    }
+
+    // Show controls on any interaction
+    el.playerContainer.addEventListener('mousemove', showControls);
+    el.playerContainer.addEventListener('mouseenter', showControls);
+    el.playerContainer.addEventListener('touchstart', (e) => {
+      // Toggle controls on touch
+      if (el.playerContainer.classList.contains('show-controls') && isPlaying) {
+        hideControls();
+      } else {
+        showControls();
+      }
+    }, { passive: true });
+    
+    // Keep controls visible when interacting with them
+    document.querySelectorAll('.controls-top, .controls-bottom').forEach(ctrl => {
+      ctrl.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        showControls();
+      }, { passive: true });
+      ctrl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showControls();
+      });
+    });
+
+    // Show controls initially
+    showControls();
 
     // Fetch data
     async function fetchSheetData() {
@@ -603,7 +641,8 @@
       el.volumeSlider.value = savedVolume;
       updateVolumeSlider();
       updateSeek();
-      resetControlsTimer();
+      // Show controls initially, will auto-hide when playing
+      showControls();
     }
 
     function onPlayerStateChange(event) {
@@ -612,15 +651,19 @@
         el.playIcon.classList.add('hidden');
         el.pauseIcon.classList.remove('hidden');
         el.overlayPlay.classList.add('hidden');
+        el.playerContainer.classList.remove('paused');
         showLoading(false);
-        resetControlsTimer();
+        // Start auto-hide timer
+        showControls();
       } else if (event.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         el.playIcon.classList.remove('hidden');
         el.pauseIcon.classList.add('hidden');
         el.overlayPlay.classList.remove('hidden');
+        // Keep controls visible when paused
+        el.playerContainer.classList.add('paused');
         el.playerContainer.classList.add('show-controls');
-        el.playerContainer.classList.remove('controls-hidden');
+        clearTimeout(controlsTimer);
       } else if (event.data === YT.PlayerState.BUFFERING) {
         showLoading(true);
       } else if (event.data === YT.PlayerState.ENDED) {
@@ -745,9 +788,30 @@
       }
     });
 
-    el.playerContainer.addEventListener('dblclick', (e) => {
-      if (!e.target.closest('.controls-top') && !e.target.closest('.controls-bottom')) {
+    // Single tap on video area shows controls, double tap fullscreen
+    let tapTimeout = null;
+    el.playerContainer.addEventListener('click', (e) => {
+      // Ignore clicks on controls
+      if (e.target.closest('.controls-top') || e.target.closest('.controls-bottom') || e.target.closest('.overlay-play')) {
+        return;
+      }
+      
+      if (tapTimeout) {
+        // Double tap - fullscreen
+        clearTimeout(tapTimeout);
+        tapTimeout = null;
         toggleFullscreen();
+      } else {
+        // Single tap - wait to see if it's a double tap
+        tapTimeout = setTimeout(() => {
+          tapTimeout = null;
+          // Single tap - just show/hide controls
+          if (el.playerContainer.classList.contains('show-controls') && isPlaying) {
+            hideControls();
+          } else {
+            showControls();
+          }
+        }, 250);
       }
     });
 
