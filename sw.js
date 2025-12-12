@@ -1,17 +1,17 @@
-// Minimal Service Worker - v6
-const CACHE = 'vp-v6';
-
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-
-self.addEventListener('fetch', e => {
-  // Only cache our own files, let everything else go to network
-  if (e.request.method !== 'GET') return;
-  
-  const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
-  
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
-});
+{
+  "name": "Video Player",
+  "short_name": "Player",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23000' width='512' height='512'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
