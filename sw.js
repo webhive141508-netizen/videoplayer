@@ -1,8 +1,8 @@
 const CACHE_NAME = 'yt-player-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/videoplayer/',
+  '/videoplayer/index.html',
+  '/videoplayer/manifest.json'
 ];
 
 // Install event - cache files
@@ -38,16 +38,14 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
         if (response) {
-          return response;
+          return response; // Return cached version
         }
         return fetch(event.request).then((response) => {
-          // Don't cache non-successful responses or non-GET requests
+          // Only cache GET requests with successful response
           if (!response || response.status !== 200 || event.request.method !== 'GET') {
             return response;
           }
-          // Clone and cache the response
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
             .then((cache) => {
@@ -57,8 +55,8 @@ self.addEventListener('fetch', (event) => {
         });
       })
       .catch(() => {
-        // Offline fallback
-        return caches.match('/index.html');
+        // Offline fallback to main page
+        return caches.match('/videoplayer/index.html');
       })
   );
 });
