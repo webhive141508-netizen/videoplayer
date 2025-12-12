@@ -2,7 +2,7 @@
   "name": "YouTube Playlist Player",
   "short_name": "YT Player",
   "description": "A YouTube playlist player powered by Google Sheets",
-  "start_url": "/",
+  "start_url": "/videoplayer/index.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#0f0f1a",
