@@ -24,8 +24,14 @@
   
   <title>YouTube Player (Google Sheet)</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- Preconnect for faster loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube.com">
+  <link rel="preconnect" href="https://www.google.com">
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <link rel="dns-prefetch" href="https://docs.google.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
       font-family: 'Inter', sans-serif;
@@ -325,11 +331,15 @@
       }
 
       .header-section {
-        display: none;
+        display: none !important;
       }
 
       .footer-section {
-        display: none;
+        display: none !important;
+      }
+
+      .install-banner {
+        display: none !important;
       }
     }
   </style>
@@ -470,8 +480,8 @@
     </p>
   </div>
 
-  <!-- Install Banner (shown when PWA can be installed) -->
-  <div id="installBanner" class="install-banner hidden">
+  <!-- Install Banner (shown when PWA can be installed, hidden in standalone mode) -->
+  <div id="installBanner" class="install-banner hidden" style="display: none;">
     <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
       <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
     </svg>
@@ -504,14 +514,38 @@
     const installBtn = document.getElementById('installBtn');
     const closeBanner = document.getElementById('closeBanner');
 
+    // Check if running as installed PWA - hide install banner immediately
+    function isRunningAsPWA() {
+      return window.matchMedia('(display-mode: fullscreen)').matches || 
+             window.matchMedia('(display-mode: standalone)').matches ||
+             window.navigator.standalone === true ||
+             document.referrer.includes('android-app://');
+    }
+
+    // If already installed as PWA, never show install banner
+    if (isRunningAsPWA()) {
+      console.log('Running as installed PWA - hiding install banner');
+      installBanner.style.display = 'none';
+      // Lock orientation to landscape if possible
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+          console.log('Orientation lock failed:', err);
+        });
+      }
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
       // Stash the event so it can be triggered later
       deferredPrompt = e;
-      // Show install banner
-      installBanner.classList.remove('hidden');
-      console.log('Install prompt available');
+      
+      // Only show install banner if NOT running as PWA
+      if (!isRunningAsPWA()) {
+        installBanner.style.display = '';
+        installBanner.classList.remove('hidden');
+        console.log('Install prompt available');
+      }
     });
 
     installBtn.addEventListener('click', async () => {
@@ -539,20 +573,9 @@
     window.addEventListener('appinstalled', () => {
       console.log('PWA was installed');
       installBanner.classList.add('hidden');
+      installBanner.style.display = 'none';
       deferredPrompt = null;
     });
-
-    // Check if running as installed PWA
-    if (window.matchMedia('(display-mode: fullscreen)').matches || 
-        window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('Running as installed PWA');
-      // Lock orientation to landscape if possible
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(err => {
-          console.log('Orientation lock failed:', err);
-        });
-      }
-    }
 
     // ============ VIDEO PLAYER CODE ============
     // Configuration
@@ -598,16 +621,30 @@
       pipBtn: document.getElementById("pipBtn")
     };
 
-    // YouTube IFrame API
+    // YouTube IFrame API - load immediately
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.async = true;
     document.head.appendChild(tag);
+    
+    // Pre-warm YouTube connections
+    const ytWarmup = document.createElement('link');
+    ytWarmup.rel = 'preconnect';
+    ytWarmup.href = 'https://www.youtube.com';
+    document.head.appendChild(ytWarmup);
 
-    // Fetch Google Sheet data
+    // Fetch Google Sheet data with timeout
     async function fetchSheetData() {
       try {
         showLoading(true);
-        const res = await fetch(sheetUrl);
+        
+        // Add timeout for faster failure detection
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const res = await fetch(sheetUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
