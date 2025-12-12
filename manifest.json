@@ -1,7 +1,7 @@
 {
   "name": "YouTube Playlist Player",
   "short_name": "Video Player",
-  "description": "YouTube playlist player with Google Sheets",
+  "description": "A beautiful YouTube playlist player with Google Sheets integration",
   "start_url": "./index.html",
   "scope": "./",
   "id": "ytplayer",
@@ -9,6 +9,7 @@
   "orientation": "landscape",
   "background_color": "#0f0f1a",
   "theme_color": "#6366f1",
+  "categories": ["entertainment", "video"],
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
@@ -22,5 +23,15 @@
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect fill='%230f0f1a' width='1280' height='720'/%3E%3Crect fill='%231a1a2e' x='140' y='60' width='1000' height='562' rx='16'/%3E%3Cpolygon fill='%236366f1' points='590,280 590,440 710,360'/%3E%3C/svg%3E",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Video Player"
+    }
+  ],
+  "prefer_related_applications": false
 }
