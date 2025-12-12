@@ -11,65 +11,58 @@
   <meta name="apple-mobile-web-app-title" content="Video Player">
   <meta name="application-name" content="Video Player">
   <meta name="theme-color" content="#6366f1">
-  <meta name="msapplication-TileColor" content="#6366f1">
-  <meta name="msapplication-navbutton-color" content="#6366f1">
-  <meta name="screen-orientation" content="landscape">
   
   <!-- PWA Manifest -->
   <link rel="manifest" href="./manifest.json">
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E">
   
-  <title>YouTube Player (Google Sheet)</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <!-- Preconnect for faster loading -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>YouTube Player</title>
+  
+  <!-- Preconnect for faster loading - CRITICAL -->
   <link rel="preconnect" href="https://www.youtube.com">
   <link rel="preconnect" href="https://www.google.com">
   <link rel="preconnect" href="https://i.ytimg.com">
-  <link rel="dns-prefetch" href="https://docs.google.com">
+  <link rel="preconnect" href="https://docs.google.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://s.ytimg.com">
+  <link rel="dns-prefetch" href="https://yt3.ggpht.com">
+  
+  <!-- Load YouTube API early -->
+  <script>
+    // Start loading YouTube API immediately
+    var tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    var ytReady = false;
+    function onYouTubeIframeAPIReady() { ytReady = true; if(window.initPlayer) window.initPlayer(); }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
   <style>
-    * {
-      font-family: 'Inter', sans-serif;
-    }
-
+    * { font-family: 'Inter', sans-serif; }
     body {
       background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
       min-height: 100vh;
+      margin: 0;
     }
-
-    .player-container {
-      aspect-ratio: 16/9;
-    }
-
+    .player-container { aspect-ratio: 16/9; }
     .glass {
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-
     .glass-dark {
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(20px);
     }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(99, 102, 241, 0.5);
-      border-radius: 3px;
-    }
-
-    /* Seek Bar Styling */
+    /* Seek Bar */
     .seek-bar {
       -webkit-appearance: none;
       appearance: none;
@@ -78,13 +71,7 @@
       border-radius: 10px;
       outline: none;
       cursor: pointer;
-      transition: height 0.2s ease;
     }
-
-    .seek-bar:hover {
-      height: 6px;
-    }
-
     .seek-bar::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 14px;
@@ -93,14 +80,7 @@
       background: #6366f1;
       cursor: pointer;
       box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
-    .seek-bar:hover::-webkit-slider-thumb {
-      transform: scale(1.2);
-      box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
-    }
-
     .seek-bar::-moz-range-thumb {
       width: 14px;
       height: 14px;
@@ -121,7 +101,6 @@
       outline: none;
       cursor: pointer;
     }
-
     .volume-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 12px;
@@ -130,7 +109,6 @@
       background: white;
       cursor: pointer;
     }
-
     .volume-slider::-moz-range-thumb {
       width: 12px;
       height: 12px;
@@ -140,74 +118,26 @@
       border: none;
     }
 
-    /* Control Button Styles */
+    /* Control Buttons */
     .ctrl-btn {
       color: white;
-      font-size: 18px;
       cursor: pointer;
       user-select: none;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
     }
-
     .ctrl-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
       transform: scale(1.1);
     }
+    .ctrl-btn:active { transform: scale(0.95); }
 
-    .ctrl-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* Loading Spinner */
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      border-left-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
-
-    .animate-pulse-slow {
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    /* Overlay Play Button */
-    .overlay-play {
-      width: 80px;
-      height: 80px;
-      background: rgba(99, 102, 241, 0.9);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-    }
-
-    .overlay-play:hover {
-      transform: scale(1.1);
-      background: #6366f1;
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
-    }
-
-    /* Nav Button Styles */
+    /* Nav Buttons */
     .nav-btn {
       width: 44px;
       height: 44px;
@@ -216,50 +146,58 @@
       justify-content: center;
       border-radius: 50%;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-
     .nav-btn:hover {
       transform: scale(1.1);
       border-color: rgba(99, 102, 241, 0.5);
-    }
-
-    /* Tooltip */
-    .tooltip {
-      position: relative;
-    }
-
-    .tooltip::after {
-      content: attr(data-tip);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 6px 10px;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      font-size: 12px;
-      border-radius: 6px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.2s ease;
-      margin-bottom: 8px;
-    }
-
-    .tooltip:hover::after {
-      opacity: 1;
-    }
-
-    /* Keyboard shortcut indicator */
-    kbd {
       background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-family: monospace;
+    }
+
+    /* Loading Spinner */
+    .loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-left-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Overlay Play Button */
+    .overlay-play {
+      width: 70px;
+      height: 70px;
+      background: rgba(99, 102, 241, 0.9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    }
+    .overlay-play:hover {
+      transform: scale(1.1);
+      background: #6366f1;
+    }
+
+    /* Controls visibility - SHOW BY DEFAULT */
+    .controls-top, .controls-bottom {
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+    .controls-hidden .controls-top,
+    .controls-hidden .controls-bottom {
+      opacity: 0;
+    }
+    .player-container:hover .controls-top,
+    .player-container:hover .controls-bottom,
+    .player-container.show-controls .controls-top,
+    .player-container.show-controls .controls-bottom {
+      opacity: 1;
     }
 
     /* Install Banner */
@@ -278,18 +216,10 @@
       z-index: 1000;
       animation: slideUp 0.5s ease;
     }
-
     @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(100px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
+      from { opacity: 0; transform: translateX(-50%) translateY(100px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-
     .install-banner button {
       background: white;
       color: #6366f1;
@@ -298,118 +228,105 @@
       font-weight: 600;
       transition: all 0.2s ease;
     }
-
-    .install-banner button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    }
-
+    .install-banner button:hover { transform: scale(1.05); }
     .install-banner .close-btn {
       background: transparent;
       color: white;
       padding: 4px;
       opacity: 0.7;
     }
+    .install-banner .close-btn:hover { opacity: 1; transform: none; }
 
-    .install-banner .close-btn:hover {
-      opacity: 1;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* PWA Standalone Mode Styles */
+    /* PWA Mode - Hide install banner completely */
     @media (display-mode: fullscreen), (display-mode: standalone) {
-      body {
-        padding: 0;
-      }
-      
+      body { padding: 0; }
       .player-container {
         max-width: 100vw;
         width: 100vw;
         height: 100vh;
         border-radius: 0;
       }
+      .header-section, .footer-section { display: none !important; }
+      #installBanner { display: none !important; visibility: hidden !important; }
+    }
 
-      .header-section {
-        display: none !important;
-      }
+    /* Hide for PWA class */
+    .is-pwa #installBanner { display: none !important; visibility: hidden !important; }
 
-      .footer-section {
-        display: none !important;
-      }
-
-      .install-banner {
-        display: none !important;
-      }
+    kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: monospace;
     }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
 
   <!-- Header -->
-  <div class="text-center mb-6 header-section">
-    <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">
-      <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">YouTube Playlist Player</span>
+  <div class="text-center mb-4 header-section">
+    <h1 class="text-2xl md:text-3xl font-bold text-white mb-1">
+      <span class="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">YouTube Playlist</span>
     </h1>
-    <p class="text-gray-400 text-sm" id="playlistInfo">Loading playlist...</p>
+    <p class="text-gray-400 text-sm" id="playlistInfo">Loading...</p>
   </div>
 
   <!-- Main Player Container -->
-  <div class="player-container relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20 group" id="playerContainer">
+  <div class="player-container show-controls relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20" id="playerContainer">
     
     <!-- Video Player -->
     <div id="player" class="w-full h-full"></div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30">
-      <div class="loader mb-4"></div>
-      <p class="text-white text-sm animate-pulse-slow">Loading video...</p>
+    <div id="loadingOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-30">
+      <div class="loader mb-3"></div>
+      <p class="text-white text-sm">Loading...</p>
     </div>
 
     <!-- Center Play Button Overlay -->
     <div id="overlayPlay" class="absolute inset-0 flex items-center justify-center z-20 bg-black/30 hidden">
       <div class="overlay-play">
-        <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+        <svg class="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
           <path d="M8 5v14l11-7z"/>
         </svg>
       </div>
     </div>
 
-    <!-- Top Navigation Bar -->
-    <div class="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <!-- Top Navigation Bar - VISIBLE BY DEFAULT -->
+    <div class="controls-top absolute top-0 left-0 right-0 p-3 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 to-transparent">
       <div class="flex items-center gap-2">
-        <button id="prevBtn" class="nav-btn glass text-white tooltip" data-tip="Previous (P)">
+        <button id="prevBtn" class="nav-btn glass text-white">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
           </svg>
         </button>
-        <button id="nextBtn" class="nav-btn glass text-white tooltip" data-tip="Next (N)">
+        <button id="nextBtn" class="nav-btn glass text-white">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
           </svg>
         </button>
       </div>
 
-      <!-- Video Title -->
-      <div class="flex-1 mx-4 text-center">
+      <div class="flex-1 mx-3 text-center">
         <p id="videoTitle" class="text-white text-sm font-medium truncate">Loading...</p>
         <p id="videoCounter" class="text-gray-400 text-xs">-/-</p>
       </div>
 
-      <button id="refreshBtn" class="nav-btn glass text-emerald-400 tooltip" data-tip="Refresh Playlist (R)">
+      <button id="refreshBtn" class="nav-btn glass text-emerald-400">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
       </button>
     </div>
 
-    <!-- Bottom Controls -->
-    <div class="absolute bottom-0 left-0 right-0 p-4 glass-dark z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <!-- Bottom Controls - VISIBLE BY DEFAULT -->
+    <div class="controls-bottom absolute bottom-0 left-0 right-0 p-3 glass-dark z-20">
       
       <!-- Progress Bar -->
-      <div class="mb-3 relative group/seek">
+      <div class="mb-2">
         <input type="range" class="seek-bar w-full" id="seekBar" value="0" min="0" max="100" step="0.1">
-        <div id="seekTooltip" class="absolute bottom-full mb-2 px-2 py-1 bg-black/90 text-white text-xs rounded opacity-0 pointer-events-none transition-opacity"></div>
       </div>
 
       <!-- Control Buttons -->
@@ -417,7 +334,7 @@
         
         <!-- Left Controls -->
         <div class="flex items-center gap-1">
-          <button class="ctrl-btn tooltip" id="playPause" data-tip="Play/Pause (Space)">
+          <button class="ctrl-btn" id="playPause">
             <svg id="pauseIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
             </svg>
@@ -426,21 +343,19 @@
             </svg>
           </button>
 
-          <!-- Volume Controls -->
-          <div class="flex items-center gap-2 ml-2 group/vol">
-            <button class="ctrl-btn tooltip" id="muteBtn" data-tip="Mute (M)">
-              <svg id="volumeIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-              <svg id="muteIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-              </svg>
-            </button>
-            <input type="range" class="volume-slider opacity-0 group-hover/vol:opacity-100 transition-opacity" id="volumeSlider" value="100" min="0" max="100">
-          </div>
+          <!-- Volume -->
+          <button class="ctrl-btn" id="muteBtn">
+            <svg id="volumeIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+            <svg id="muteIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+            </svg>
+          </button>
+          <input type="range" class="volume-slider hidden md:block" id="volumeSlider" value="100" min="0" max="100">
 
-          <!-- Time Display -->
-          <div class="flex items-center text-white text-sm ml-3">
+          <!-- Time -->
+          <div class="flex items-center text-white text-xs ml-2">
             <span id="currentTime" class="tabular-nums">0:00</span>
             <span class="mx-1 text-gray-500">/</span>
             <span id="duration" class="text-gray-400 tabular-nums">0:00</span>
@@ -449,12 +364,7 @@
 
         <!-- Right Controls -->
         <div class="flex items-center gap-1">
-          <button class="ctrl-btn tooltip" id="pipBtn" data-tip="Picture-in-Picture (I)">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
-            </svg>
-          </button>
-          <button class="ctrl-btn tooltip" id="fullscreenBtn" data-tip="Fullscreen (F)">
+          <button class="ctrl-btn" id="fullscreenBtn">
             <svg id="enterFullscreen" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
             </svg>
@@ -468,122 +378,89 @@
   </div>
 
   <!-- Keyboard Shortcuts -->
-  <div class="mt-6 text-center footer-section">
-    <p class="text-gray-500 text-xs">
-      <span class="hidden md:inline">
-        <kbd>Space</kbd> Play/Pause &nbsp;
-        <kbd>←</kbd><kbd>→</kbd> Seek &nbsp;
-        <kbd>↑</kbd><kbd>↓</kbd> Volume &nbsp;
-        <kbd>M</kbd> Mute &nbsp;
-        <kbd>F</kbd> Fullscreen
-      </span>
+  <div class="mt-4 text-center footer-section">
+    <p class="text-gray-500 text-xs hidden md:block">
+      <kbd>Space</kbd> Play &nbsp;
+      <kbd>←</kbd><kbd>→</kbd> Seek &nbsp;
+      <kbd>M</kbd> Mute &nbsp;
+      <kbd>F</kbd> Fullscreen
     </p>
   </div>
 
-  <!-- Install Banner (shown when PWA can be installed, hidden in standalone mode) -->
-  <div id="installBanner" class="install-banner hidden" style="display: none;">
-    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+  <!-- Install Banner - HIDDEN IN PWA MODE -->
+  <div id="installBanner" class="install-banner hidden">
+    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
       <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
     </svg>
-    <span class="text-white font-medium">Install App</span>
+    <span class="text-white font-medium text-sm">Install App</span>
     <button id="installBtn">Install</button>
     <button class="close-btn" id="closeBanner">
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
       </svg>
     </button>
   </div>
 
   <script>
-    // ============ PWA SERVICE WORKER REGISTRATION ============
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registered successfully:', registration.scope);
-          })
-          .catch(error => {
-            console.log('ServiceWorker registration failed:', error);
-          });
-      });
+    // ============ PWA DETECTION - RUN IMMEDIATELY ============
+    const isPWA = window.matchMedia('(display-mode: fullscreen)').matches || 
+                  window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true;
+    
+    if (isPWA) {
+      document.body.classList.add('is-pwa');
+      // Try to lock landscape
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
     }
 
-    // ============ PWA INSTALL PROMPT ============
+    // ============ SERVICE WORKER ============
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    // ============ INSTALL BANNER ============
     let deferredPrompt;
     const installBanner = document.getElementById('installBanner');
     const installBtn = document.getElementById('installBtn');
     const closeBanner = document.getElementById('closeBanner');
 
-    // Check if running as installed PWA - hide install banner immediately
-    function isRunningAsPWA() {
-      return window.matchMedia('(display-mode: fullscreen)').matches || 
-             window.matchMedia('(display-mode: standalone)').matches ||
-             window.navigator.standalone === true ||
-             document.referrer.includes('android-app://');
-    }
-
-    // If already installed as PWA, never show install banner
-    if (isRunningAsPWA()) {
-      console.log('Running as installed PWA - hiding install banner');
+    // Never show install banner if running as PWA
+    if (isPWA) {
       installBanner.style.display = 'none';
-      // Lock orientation to landscape if possible
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(err => {
-          console.log('Orientation lock failed:', err);
-        });
-      }
+      installBanner.remove();
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later
       deferredPrompt = e;
-      
-      // Only show install banner if NOT running as PWA
-      if (!isRunningAsPWA()) {
-        installBanner.style.display = '';
+      if (!isPWA) {
         installBanner.classList.remove('hidden');
-        console.log('Install prompt available');
       }
     });
 
-    installBtn.addEventListener('click', async () => {
+    installBtn?.addEventListener('click', async () => {
       if (!deferredPrompt) return;
-      
-      // Show the install prompt
       deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
-      console.log('User response to install prompt:', outcome);
-      
-      // Clear the deferred prompt
       deferredPrompt = null;
-      
-      // Hide the banner
       installBanner.classList.add('hidden');
     });
 
-    closeBanner.addEventListener('click', () => {
+    closeBanner?.addEventListener('click', () => {
       installBanner.classList.add('hidden');
     });
 
-    // Detect if app was installed
     window.addEventListener('appinstalled', () => {
-      console.log('PWA was installed');
-      installBanner.classList.add('hidden');
-      installBanner.style.display = 'none';
-      deferredPrompt = null;
+      installBanner?.remove();
     });
 
-    // ============ VIDEO PLAYER CODE ============
-    // Configuration
+    // ============ VIDEO PLAYER ============
     const sheetId = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const sheetName = "link";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
-    // State
     let player;
     let videoLinks = [];
     let videoTitles = [];
@@ -592,59 +469,54 @@
     let duration = 0;
     let isMuted = false;
     let savedVolume = 100;
+    let controlsTimer;
 
-    // DOM Elements
-    const elements = {
-      seekBar: document.getElementById("seekBar"),
-      currentTime: document.getElementById("currentTime"),
-      duration: document.getElementById("duration"),
-      playPause: document.getElementById("playPause"),
-      playIcon: document.getElementById("playIcon"),
-      pauseIcon: document.getElementById("pauseIcon"),
-      overlayPlay: document.getElementById("overlayPlay"),
-      loadingOverlay: document.getElementById("loadingOverlay"),
-      volumeSlider: document.getElementById("volumeSlider"),
-      muteBtn: document.getElementById("muteBtn"),
-      volumeIcon: document.getElementById("volumeIcon"),
-      muteIcon: document.getElementById("muteIcon"),
-      fullscreenBtn: document.getElementById("fullscreenBtn"),
-      enterFullscreen: document.getElementById("enterFullscreen"),
-      exitFullscreen: document.getElementById("exitFullscreen"),
-      playerContainer: document.getElementById("playerContainer"),
-      videoTitle: document.getElementById("videoTitle"),
-      videoCounter: document.getElementById("videoCounter"),
-      playlistInfo: document.getElementById("playlistInfo"),
-      seekTooltip: document.getElementById("seekTooltip"),
-      prevBtn: document.getElementById("prevBtn"),
-      nextBtn: document.getElementById("nextBtn"),
-      refreshBtn: document.getElementById("refreshBtn"),
-      pipBtn: document.getElementById("pipBtn")
+    const $ = id => document.getElementById(id);
+    const el = {
+      seekBar: $("seekBar"),
+      currentTime: $("currentTime"),
+      duration: $("duration"),
+      playPause: $("playPause"),
+      playIcon: $("playIcon"),
+      pauseIcon: $("pauseIcon"),
+      overlayPlay: $("overlayPlay"),
+      loadingOverlay: $("loadingOverlay"),
+      volumeSlider: $("volumeSlider"),
+      muteBtn: $("muteBtn"),
+      volumeIcon: $("volumeIcon"),
+      muteIcon: $("muteIcon"),
+      fullscreenBtn: $("fullscreenBtn"),
+      enterFullscreen: $("enterFullscreen"),
+      exitFullscreen: $("exitFullscreen"),
+      playerContainer: $("playerContainer"),
+      videoTitle: $("videoTitle"),
+      videoCounter: $("videoCounter"),
+      playlistInfo: $("playlistInfo"),
+      prevBtn: $("prevBtn"),
+      nextBtn: $("nextBtn"),
+      refreshBtn: $("refreshBtn")
     };
 
-    // YouTube IFrame API - load immediately
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    tag.async = true;
-    document.head.appendChild(tag);
-    
-    // Pre-warm YouTube connections
-    const ytWarmup = document.createElement('link');
-    ytWarmup.rel = 'preconnect';
-    ytWarmup.href = 'https://www.youtube.com';
-    document.head.appendChild(ytWarmup);
+    // Auto-hide controls after 3 seconds
+    function resetControlsTimer() {
+      el.playerContainer.classList.add('show-controls');
+      el.playerContainer.classList.remove('controls-hidden');
+      clearTimeout(controlsTimer);
+      controlsTimer = setTimeout(() => {
+        if (isPlaying) {
+          el.playerContainer.classList.remove('show-controls');
+          el.playerContainer.classList.add('controls-hidden');
+        }
+      }, 3000);
+    }
 
-    // Fetch Google Sheet data with timeout
+    el.playerContainer.addEventListener('mousemove', resetControlsTimer);
+    el.playerContainer.addEventListener('touchstart', resetControlsTimer);
+
+    // Fetch data
     async function fetchSheetData() {
       try {
-        showLoading(true);
-        
-        // Add timeout for faster failure detection
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const res = await fetch(sheetUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
+        const res = await fetch(sheetUrl);
         const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
         
@@ -652,7 +524,7 @@
         videoTitles = [];
         
         json.table.rows.forEach(row => {
-          const title = row.c[0]?.v || 'Untitled Video';
+          const title = row.c[0]?.v || 'Untitled';
           const link = row.c[1]?.v;
           if (link) {
             videoTitles.push(title);
@@ -661,54 +533,48 @@
         });
 
         if (videoLinks.length > 0) {
-          elements.playlistInfo.textContent = `${videoLinks.length} videos in playlist`;
-          loadVideo(currentIndex);
+          el.playlistInfo.textContent = `${videoLinks.length} videos`;
+          initPlayer();
         } else {
-          showError("No videos found in playlist");
+          showError("No videos found");
         }
       } catch (err) {
-        console.error("Error loading sheet:", err);
-        showError("Failed to load playlist. Please try again.");
+        showError("Failed to load playlist");
       }
     }
 
-    function showError(message) {
-      elements.loadingOverlay.innerHTML = `
+    function showError(msg) {
+      el.loadingOverlay.innerHTML = `
         <div class="text-center">
-          <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          <p class="text-white">${message}</p>
-          <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-            Try Again
-          </button>
+          <p class="text-white mb-4">${msg}</p>
+          <button onclick="location.reload()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Retry</button>
         </div>
       `;
     }
 
     function showLoading(show) {
-      elements.loadingOverlay.style.display = show ? 'flex' : 'none';
+      el.loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
-    // Extract YouTube video ID
     function getYouTubeId(link) {
       const match = link.match(/[?&]v=([^&]+)/) || link.match(/youtu\.be\/([^?&]+)/);
       return match ? match[1] : null;
     }
 
-    // YouTube API Ready callback
-    function onYouTubeIframeAPIReady() {
-      // Will be called when API is ready
-    }
+    window.initPlayer = function() {
+      if (!ytReady || videoLinks.length === 0) return;
+      loadVideo(currentIndex);
+    };
 
     function loadVideo(index) {
       const videoId = getYouTubeId(videoLinks[index]);
       if (!videoId) return;
 
       showLoading(true);
-      updateVideoInfo(index);
+      el.videoTitle.textContent = videoTitles[index];
+      el.videoCounter.textContent = `${index + 1}/${videoLinks.length}`;
 
-      if (player) {
+      if (player && player.loadVideoById) {
         player.loadVideoById(videoId);
       } else {
         player = new YT.Player("player", {
@@ -718,8 +584,8 @@
             enablejsapi: 1,
             modestbranding: 1,
             rel: 0,
-            origin: window.location.origin,
-            playsinline: 1
+            playsinline: 1,
+            autoplay: 1
           },
           events: {
             onReady: onPlayerReady,
@@ -729,39 +595,35 @@
       }
     }
 
-    function updateVideoInfo(index) {
-      elements.videoTitle.textContent = videoTitles[index] || 'Loading...';
-      elements.videoCounter.textContent = `${index + 1} / ${videoLinks.length}`;
-    }
-
     function onPlayerReady() {
       duration = player.getDuration();
-      elements.duration.textContent = formatTime(duration);
+      el.duration.textContent = formatTime(duration);
       showLoading(false);
-      updateSeek();
-      
-      // Set initial volume
       player.setVolume(savedVolume);
-      elements.volumeSlider.value = savedVolume;
+      el.volumeSlider.value = savedVolume;
       updateVolumeSlider();
+      updateSeek();
+      resetControlsTimer();
     }
 
     function onPlayerStateChange(event) {
       if (event.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
-        elements.playIcon.classList.add('hidden');
-        elements.pauseIcon.classList.remove('hidden');
-        elements.overlayPlay.classList.add('hidden');
+        el.playIcon.classList.add('hidden');
+        el.pauseIcon.classList.remove('hidden');
+        el.overlayPlay.classList.add('hidden');
         showLoading(false);
+        resetControlsTimer();
       } else if (event.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
-        elements.playIcon.classList.remove('hidden');
-        elements.pauseIcon.classList.add('hidden');
-        elements.overlayPlay.classList.remove('hidden');
+        el.playIcon.classList.remove('hidden');
+        el.pauseIcon.classList.add('hidden');
+        el.overlayPlay.classList.remove('hidden');
+        el.playerContainer.classList.add('show-controls');
+        el.playerContainer.classList.remove('controls-hidden');
       } else if (event.data === YT.PlayerState.BUFFERING) {
         showLoading(true);
       } else if (event.data === YT.PlayerState.ENDED) {
-        // Auto-play next video
         if (currentIndex < videoLinks.length - 1) {
           currentIndex++;
           loadVideo(currentIndex);
@@ -771,231 +633,127 @@
 
     function togglePlayPause() {
       if (!player) return;
-      if (isPlaying) {
-        player.pauseVideo();
-      } else {
-        player.playVideo();
-      }
+      if (isPlaying) player.pauseVideo();
+      else player.playVideo();
     }
 
-    // Volume Controls
     function toggleMute() {
       if (!player) return;
       isMuted = !isMuted;
-      
       if (isMuted) {
         savedVolume = player.getVolume();
         player.setVolume(0);
-        elements.volumeSlider.value = 0;
-        elements.volumeIcon.classList.add('hidden');
-        elements.muteIcon.classList.remove('hidden');
+        el.volumeSlider.value = 0;
+        el.volumeIcon.classList.add('hidden');
+        el.muteIcon.classList.remove('hidden');
       } else {
         player.setVolume(savedVolume);
-        elements.volumeSlider.value = savedVolume;
-        elements.volumeIcon.classList.remove('hidden');
-        elements.muteIcon.classList.add('hidden');
+        el.volumeSlider.value = savedVolume;
+        el.volumeIcon.classList.remove('hidden');
+        el.muteIcon.classList.add('hidden');
       }
       updateVolumeSlider();
     }
 
     function updateVolumeSlider() {
-      const value = elements.volumeSlider.value;
-      elements.volumeSlider.style.setProperty('--volume', `${value}%`);
+      el.volumeSlider.style.setProperty('--volume', `${el.volumeSlider.value}%`);
     }
 
-    elements.volumeSlider.addEventListener('input', () => {
+    el.volumeSlider.addEventListener('input', () => {
       if (!player) return;
-      const volume = parseInt(elements.volumeSlider.value);
-      player.setVolume(volume);
-      savedVolume = volume;
-      isMuted = volume === 0;
-      
-      if (isMuted) {
-        elements.volumeIcon.classList.add('hidden');
-        elements.muteIcon.classList.remove('hidden');
-      } else {
-        elements.volumeIcon.classList.remove('hidden');
-        elements.muteIcon.classList.add('hidden');
-      }
+      const vol = parseInt(el.volumeSlider.value);
+      player.setVolume(vol);
+      savedVolume = vol;
+      isMuted = vol === 0;
+      el.volumeIcon.classList.toggle('hidden', isMuted);
+      el.muteIcon.classList.toggle('hidden', !isMuted);
       updateVolumeSlider();
     });
 
-    // Fullscreen
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
-        elements.playerContainer.requestFullscreen().catch(err => {
-          console.error('Fullscreen error:', err);
-        });
+        el.playerContainer.requestFullscreen().catch(() => {});
       } else {
         document.exitFullscreen();
       }
     }
 
     document.addEventListener('fullscreenchange', () => {
-      if (document.fullscreenElement) {
-        elements.enterFullscreen.classList.add('hidden');
-        elements.exitFullscreen.classList.remove('hidden');
-      } else {
-        elements.enterFullscreen.classList.remove('hidden');
-        elements.exitFullscreen.classList.add('hidden');
-      }
+      const fs = !!document.fullscreenElement;
+      el.enterFullscreen.classList.toggle('hidden', fs);
+      el.exitFullscreen.classList.toggle('hidden', !fs);
     });
 
-    // Picture-in-Picture
-    async function togglePiP() {
-      try {
-        const iframe = document.querySelector('#player iframe');
-        if (iframe && document.pictureInPictureEnabled) {
-          // Note: PiP for iframes is limited, this is a placeholder
-          alert('Picture-in-Picture is not fully supported for embedded YouTube videos.');
-        }
-      } catch (err) {
-        console.error('PiP error:', err);
-      }
-    }
-
-    // Seek bar update loop
     function updateSeek() {
-      if (!player || !player.getCurrentTime) {
-        requestAnimationFrame(updateSeek);
-        return;
+      if (player && player.getCurrentTime) {
+        const ct = player.getCurrentTime();
+        duration = player.getDuration() || duration;
+        const progress = (ct / duration) * 100 || 0;
+        el.seekBar.value = progress;
+        el.seekBar.style.setProperty('--progress', `${progress}%`);
+        el.currentTime.textContent = formatTime(ct);
+        el.duration.textContent = formatTime(duration);
       }
-      
-      const currentTime = player.getCurrentTime();
-      duration = player.getDuration();
-      const progress = (currentTime / duration) * 100 || 0;
-      
-      elements.seekBar.value = progress;
-      elements.seekBar.style.setProperty('--progress', `${progress}%`);
-      elements.currentTime.textContent = formatTime(currentTime);
-      elements.duration.textContent = formatTime(duration);
-      
       requestAnimationFrame(updateSeek);
     }
 
-    // Seek tooltip
-    elements.seekBar.addEventListener('mousemove', (e) => {
-      const rect = elements.seekBar.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      const time = percent * duration;
-      
-      elements.seekTooltip.textContent = formatTime(time);
-      elements.seekTooltip.style.left = `${percent * 100}%`;
-      elements.seekTooltip.style.transform = 'translateX(-50%)';
-      elements.seekTooltip.style.opacity = '1';
-    });
-
-    elements.seekBar.addEventListener('mouseleave', () => {
-      elements.seekTooltip.style.opacity = '0';
-    });
-
-    elements.seekBar.addEventListener('input', () => {
+    el.seekBar.addEventListener('input', () => {
       if (!player) return;
-      const seekTo = (elements.seekBar.value / 100) * duration;
-      player.seekTo(seekTo, true);
+      player.seekTo((el.seekBar.value / 100) * duration, true);
     });
 
-    // Format time helper
-    function formatTime(time) {
-      if (isNaN(time) || time < 0) return "0:00";
-      const hours = Math.floor(time / 3600);
-      const mins = Math.floor((time % 3600) / 60);
-      const secs = Math.floor(time % 60);
-      
-      if (hours > 0) {
-        return `${hours}:${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}`;
-      }
-      return `${mins}:${secs < 10 ? '0' + secs : secs}`;
+    function formatTime(t) {
+      if (isNaN(t) || t < 0) return "0:00";
+      const h = Math.floor(t / 3600);
+      const m = Math.floor((t % 3600) / 60);
+      const s = Math.floor(t % 60);
+      if (h > 0) return `${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+      return `${m}:${s < 10 ? '0' + s : s}`;
     }
 
     // Event Listeners
-    elements.playPause.addEventListener('click', togglePlayPause);
-    elements.overlayPlay.addEventListener('click', togglePlayPause);
-    elements.muteBtn.addEventListener('click', toggleMute);
-    elements.fullscreenBtn.addEventListener('click', toggleFullscreen);
-    elements.pipBtn.addEventListener('click', togglePiP);
+    el.playPause.addEventListener('click', togglePlayPause);
+    el.overlayPlay.addEventListener('click', togglePlayPause);
+    el.muteBtn.addEventListener('click', toggleMute);
+    el.fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-    elements.prevBtn.addEventListener('click', () => {
+    el.prevBtn.addEventListener('click', () => {
       currentIndex = (currentIndex - 1 + videoLinks.length) % videoLinks.length;
       loadVideo(currentIndex);
     });
 
-    elements.nextBtn.addEventListener('click', () => {
+    el.nextBtn.addEventListener('click', () => {
       currentIndex = (currentIndex + 1) % videoLinks.length;
       loadVideo(currentIndex);
     });
 
-    elements.refreshBtn.addEventListener('click', () => {
-      location.reload();
-    });
+    el.refreshBtn.addEventListener('click', () => location.reload());
 
-    // Keyboard Controls
+    // Keyboard
     document.addEventListener('keydown', (e) => {
-      // Ignore if typing in input
       if (e.target.tagName === 'INPUT') return;
-      
       switch (e.key.toLowerCase()) {
-        case ' ':
-          e.preventDefault();
-          togglePlayPause();
-          break;
-        case 'arrowleft':
-          e.preventDefault();
-          if (player) player.seekTo(player.getCurrentTime() - 10, true);
-          break;
-        case 'arrowright':
-          e.preventDefault();
-          if (player) player.seekTo(player.getCurrentTime() + 10, true);
-          break;
-        case 'arrowup':
-          e.preventDefault();
-          if (player) {
-            const vol = Math.min(100, player.getVolume() + 10);
-            player.setVolume(vol);
-            elements.volumeSlider.value = vol;
-            savedVolume = vol;
-            updateVolumeSlider();
-          }
-          break;
-        case 'arrowdown':
-          e.preventDefault();
-          if (player) {
-            const vol = Math.max(0, player.getVolume() - 10);
-            player.setVolume(vol);
-            elements.volumeSlider.value = vol;
-            savedVolume = vol;
-            updateVolumeSlider();
-          }
-          break;
-        case 'm':
-          toggleMute();
-          break;
-        case 'f':
-          toggleFullscreen();
-          break;
-        case 'p':
-          elements.prevBtn.click();
-          break;
-        case 'n':
-          elements.nextBtn.click();
-          break;
-        case 'r':
-          location.reload();
-          break;
-        case 'i':
-          togglePiP();
-          break;
+        case ' ': e.preventDefault(); togglePlayPause(); break;
+        case 'arrowleft': e.preventDefault(); if (player) player.seekTo(player.getCurrentTime() - 10, true); break;
+        case 'arrowright': e.preventDefault(); if (player) player.seekTo(player.getCurrentTime() + 10, true); break;
+        case 'arrowup': e.preventDefault(); if (player) { const v = Math.min(100, player.getVolume() + 10); player.setVolume(v); el.volumeSlider.value = v; updateVolumeSlider(); } break;
+        case 'arrowdown': e.preventDefault(); if (player) { const v = Math.max(0, player.getVolume() - 10); player.setVolume(v); el.volumeSlider.value = v; updateVolumeSlider(); } break;
+        case 'm': toggleMute(); break;
+        case 'f': toggleFullscreen(); break;
+        case 'p': el.prevBtn.click(); break;
+        case 'n': el.nextBtn.click(); break;
       }
     });
 
-    // Double-click for fullscreen
-    elements.playerContainer.addEventListener('dblclick', (e) => {
-      if (e.target.closest('.controls') || e.target.closest('.nav-btn')) return;
-      toggleFullscreen();
+    el.playerContainer.addEventListener('dblclick', (e) => {
+      if (!e.target.closest('.controls-top') && !e.target.closest('.controls-bottom')) {
+        toggleFullscreen();
+      }
     });
 
-    // Initialize
+    // Start loading
     fetchSheetData();
+    if (ytReady) initPlayer();
   </script>
 </body>
 </html>
