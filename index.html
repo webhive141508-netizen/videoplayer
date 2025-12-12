@@ -17,12 +17,14 @@
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       height: 100%;
       overflow: hidden;
+      touch-action: manipulation;
     }
     
     .wrap {
       position: relative;
       width: 100%;
       height: 100vh;
+      height: 100dvh;
       background: #000;
     }
     
@@ -48,45 +50,49 @@
     }
     .loader.hide { display: none; }
     .spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid #333;
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin .8s linear infinite;
+      animation: spin .6s linear infinite;
     }
     .loader-text {
-      margin-top: 15px;
-      font-size: 14px;
+      margin-top: 12px;
+      font-size: 13px;
       color: #888;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    /* UI Overlay - Always interactive */
+    /* UI Overlay */
     .ui {
       position: absolute;
       inset: 0;
       z-index: 50;
       display: flex;
       flex-direction: column;
+      pointer-events: none;
+    }
+    .ui > * {
+      pointer-events: auto;
     }
     
     /* Top bar */
     .top {
-      padding: 15px;
+      padding: 12px 15px;
       background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.2s;
     }
-    .ui.show .top, .ui.paused .top { opacity: 1; }
+    .ui.visible .top { opacity: 1; }
     
     .nav-btn {
       width: 40px;
       height: 40px;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.15);
       border: none;
       border-radius: 50%;
       color: #fff;
@@ -94,139 +100,144 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      flex-shrink: 0;
     }
-    .nav-btn:active { background: rgba(255,255,255,0.2); }
+    .nav-btn:active { background: rgba(255,255,255,0.3); }
     .nav-btn svg { width: 20px; height: 20px; fill: currentColor; }
     
     .info {
       flex: 1;
       text-align: center;
       min-width: 0;
+      padding: 0 5px;
     }
     .video-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .video-count {
-      font-size: 12px;
+      font-size: 11px;
       color: #888;
       margin-top: 2px;
     }
     
-    /* Center area */
+    /* Center area - tappable */
     .center {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
+      pointer-events: auto;
     }
     
-    /* Big play button - always clickable when paused */
+    /* Big play button */
     .play-big {
-      width: 80px;
-      height: 80px;
-      background: rgba(0,0,0,0.6);
-      border: 3px solid #fff;
+      width: 70px;
+      height: 70px;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid #fff;
       border-radius: 50%;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       z-index: 60;
+      opacity: 0;
+      transition: opacity 0.2s;
     }
-    .play-big svg { width: 35px; height: 35px; fill: #fff; margin-left: 5px; }
-    .ui.paused .play-big { display: flex; }
-    .play-big:active { transform: scale(0.95); }
+    .play-big svg { width: 30px; height: 30px; fill: #fff; margin-left: 4px; }
+    .ui.visible .play-big { opacity: 1; }
+    .play-big:active { transform: scale(0.9); }
     
     /* Tap indicators */
-    .tap-indicator {
+    .tap-ind {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.8);
       color: #fff;
-      padding: 10px 20px;
-      border-radius: 25px;
-      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
       font-weight: 600;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.15s;
     }
-    .tap-indicator.left { left: 15%; }
-    .tap-indicator.right { right: 15%; }
-    .tap-indicator.show { opacity: 1; }
+    .tap-ind.left { left: 12%; }
+    .tap-ind.right { right: 12%; }
+    .tap-ind.show { opacity: 1; }
     
     /* Bottom bar */
     .bottom {
-      padding: 15px;
+      padding: 12px 15px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
       background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.2s;
     }
-    .ui.show .bottom, .ui.paused .bottom { opacity: 1; }
+    .ui.visible .bottom { opacity: 1; }
     
     /* Progress bar */
-    .progress-wrap {
+    .prog-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
     .time {
-      font-size: 12px;
+      font-size: 11px;
       color: #aaa;
-      min-width: 40px;
+      min-width: 38px;
       font-variant-numeric: tabular-nums;
     }
     .time.right { text-align: right; }
     
-    .progress-bar {
+    .prog-bar {
       flex: 1;
-      height: 5px;
+      height: 4px;
       background: rgba(255,255,255,0.3);
-      border-radius: 3px;
+      border-radius: 2px;
       position: relative;
       cursor: pointer;
     }
-    .progress-fill {
+    .prog-fill {
       position: absolute;
       left: 0;
       top: 0;
       height: 100%;
-      background: #fff;
-      border-radius: 3px;
+      background: #e11d48;
+      border-radius: 2px;
       pointer-events: none;
     }
-    .progress-bar::after {
+    .prog-bar::after {
       content: '';
       position: absolute;
       top: 50%;
-      right: 0;
-      transform: translate(50%, -50%);
-      width: 15px;
-      height: 15px;
+      right: -6px;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
       background: #fff;
       border-radius: 50%;
       opacity: 0;
-      transition: opacity 0.2s;
     }
-    .progress-bar:active::after { opacity: 1; }
+    .prog-bar:active::after { opacity: 1; }
     
     /* Control buttons */
-    .controls {
+    .ctrls {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .ctrl-group {
+    .ctrl-grp {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 2px;
     }
     .ctrl-btn {
       width: 44px;
@@ -240,47 +251,47 @@
       cursor: pointer;
       border-radius: 50%;
     }
-    .ctrl-btn:active { background: rgba(255,255,255,0.1); }
-    .ctrl-btn svg { width: 24px; height: 24px; fill: currentColor; }
-    .ctrl-btn.active { color: #22c55e; }
-    .ctrl-btn.speed { font-size: 13px; font-weight: 700; width: auto; padding: 0 12px; }
+    .ctrl-btn:active { background: rgba(255,255,255,0.15); }
+    .ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .ctrl-btn.on { color: #22c55e; }
+    .ctrl-btn.spd { font-size: 12px; font-weight: 700; width: auto; padding: 0 10px; }
     
-    /* Playlist drawer */
-    .drawer-overlay {
+    /* Drawer */
+    .drawer-bg {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
       z-index: 200;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s;
+      transition: opacity 0.2s;
     }
-    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer-bg.open { opacity: 1; pointer-events: auto; }
     
     .drawer {
       position: fixed;
       top: 0;
       right: 0;
-      width: 300px;
+      width: 280px;
       max-width: 85vw;
       height: 100%;
       background: #111;
       z-index: 201;
       transform: translateX(100%);
-      transition: transform 0.3s;
+      transition: transform 0.2s;
       display: flex;
       flex-direction: column;
     }
     .drawer.open { transform: translateX(0); }
     
-    .drawer-header {
-      padding: 15px;
+    .drawer-head {
+      padding: 12px 15px;
       border-bottom: 1px solid #333;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .drawer-header h3 { font-size: 16px; font-weight: 600; }
+    .drawer-head h3 { font-size: 15px; font-weight: 600; }
     
     .drawer-list {
       flex: 1;
@@ -288,25 +299,25 @@
       -webkit-overflow-scrolling: touch;
     }
     
-    .playlist-item {
-      padding: 12px 15px;
+    .pl-item {
+      padding: 10px 15px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       border-bottom: 1px solid #222;
       cursor: pointer;
     }
-    .playlist-item:active { background: #222; }
-    .playlist-item.active { background: #1e3a5f; border-left: 3px solid #3b82f6; }
-    .playlist-item .num {
-      font-size: 13px;
+    .pl-item:active { background: #222; }
+    .pl-item.active { background: #1a365d; border-left: 3px solid #3b82f6; }
+    .pl-item .num {
+      font-size: 12px;
       font-weight: 600;
       color: #3b82f6;
-      min-width: 25px;
+      min-width: 22px;
     }
-    .playlist-item .name {
+    .pl-item .name {
       flex: 1;
-      font-size: 13px;
+      font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -315,28 +326,28 @@
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 100px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.9);
       color: #fff;
-      padding: 10px 20px;
-      border-radius: 25px;
-      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px;
       z-index: 300;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.3s;
+      transition: opacity 0.2s;
     }
     .toast.show { opacity: 1; }
     
-    /* Error state */
-    .error-box {
+    /* Error */
+    .err-box {
       text-align: center;
       padding: 20px;
     }
-    .error-box p { margin-bottom: 15px; color: #f87171; }
-    .error-box button {
+    .err-box p { margin-bottom: 15px; color: #f87171; }
+    .err-box button {
       padding: 10px 25px;
       background: #333;
       border: none;
@@ -347,51 +358,46 @@
     }
     
     /* Install Banner */
-    .install-banner {
+    .install-bar {
       position: fixed;
-      bottom: 20px;
+      bottom: 15px;
       left: 50%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      padding: 12px 20px;
-      border-radius: 50px;
+      padding: 10px 16px;
+      border-radius: 30px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       z-index: 500;
-      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5);
-      animation: slideUp 0.5s ease;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
     }
-    .install-banner.hide { display: none; }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(50px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    .install-banner svg { width: 20px; height: 20px; fill: #fff; }
-    .install-banner span { color: #fff; font-size: 14px; font-weight: 500; }
-    .install-banner .install-btn {
+    .install-bar.hide { display: none; }
+    .install-bar svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
+    .install-bar span { color: #fff; font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .install-bar .i-btn {
       background: #fff;
       color: #3b82f6;
       border: none;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
-    .install-banner .install-btn:active { transform: scale(0.95); }
-    .install-banner .close-install {
-      background: rgba(255,255,255,0.2);
+    .install-bar .i-btn:active { transform: scale(0.95); }
+    .install-bar .i-close {
+      background: rgba(255,255,255,0.25);
       border: none;
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
     }
-    .install-banner .close-install svg { width: 14px; height: 14px; }
+    .install-bar .i-close svg { width: 12px; height: 12px; }
   </style>
 </head>
 <body>
@@ -400,59 +406,59 @@
     
     <div class="loader" id="loader">
       <div class="spinner"></div>
-      <div class="loader-text" id="loaderText">Loading playlist...</div>
+      <div class="loader-text" id="loaderText">Loading...</div>
     </div>
     
-    <div class="ui" id="ui">
+    <div class="ui visible" id="ui">
       <div class="top">
-        <button class="nav-btn" id="prevBtn" title="Previous">
+        <button class="nav-btn" id="prevBtn">
           <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
-        <button class="nav-btn" id="nextBtn" title="Next">
+        <button class="nav-btn" id="nextBtn">
           <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
         <div class="info">
-          <div class="video-title" id="videoTitle">Loading...</div>
-          <div class="video-count" id="videoCount">-/-</div>
+          <div class="video-title" id="vTitle">Loading...</div>
+          <div class="video-count" id="vCount">-/-</div>
         </div>
-        <button class="nav-btn" id="playlistBtn" title="Playlist">
+        <button class="nav-btn" id="listBtn">
           <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
         </button>
       </div>
       
-      <div class="center" id="centerArea">
-        <div class="play-big" id="playBig">
+      <div class="center" id="center">
+        <div class="play-big" id="bigPlay">
           <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </div>
-        <div class="tap-indicator left" id="tapLeft">-10s</div>
-        <div class="tap-indicator right" id="tapRight">+10s</div>
+        <div class="tap-ind left" id="tapL">-10s</div>
+        <div class="tap-ind right" id="tapR">+10s</div>
       </div>
       
       <div class="bottom">
-        <div class="progress-wrap">
-          <span class="time" id="curTime">0:00</span>
-          <div class="progress-bar" id="progressBar">
-            <div class="progress-fill" id="progressFill"></div>
+        <div class="prog-wrap">
+          <span class="time" id="curT">0:00</span>
+          <div class="prog-bar" id="progBar">
+            <div class="prog-fill" id="progFill"></div>
           </div>
-          <span class="time right" id="durTime">0:00</span>
+          <span class="time right" id="durT">0:00</span>
         </div>
-        <div class="controls">
-          <div class="ctrl-group">
-            <button class="ctrl-btn" id="playPauseBtn" title="Play/Pause">
-              <svg id="pauseIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              <svg id="playIcon" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+        <div class="ctrls">
+          <div class="ctrl-grp">
+            <button class="ctrl-btn" id="playBtn">
+              <svg id="icPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="icPause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             </button>
-            <button class="ctrl-btn" id="muteBtn" title="Mute">
-              <svg id="volIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-              <svg id="muteIcon" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12A4.5 4.5 0 0014 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0021 12c0-4.28-3-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.26c-.67.52-1.42.93-2.25 1.18v2.06a9 9 0 003.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+            <button class="ctrl-btn" id="muteBtn">
+              <svg id="icVol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+              <svg id="icMute" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12A4.5 4.5 0 0014 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0021 12c0-4.28-3-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.26c-.67.52-1.42.93-2.25 1.18v2.06a9 9 0 003.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
             </button>
           </div>
-          <div class="ctrl-group">
-            <button class="ctrl-btn speed" id="speedBtn" title="Speed">1x</button>
-            <button class="ctrl-btn active" id="autoplayBtn" title="Autoplay">
+          <div class="ctrl-grp">
+            <button class="ctrl-btn spd" id="spdBtn">1x</button>
+            <button class="ctrl-btn on" id="autoBtn">
               <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
             </button>
-            <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen">
+            <button class="ctrl-btn" id="fsBtn">
               <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
             </button>
           </div>
@@ -461,9 +467,9 @@
     </div>
   </div>
   
-  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer-bg" id="drawerBg"></div>
   <div class="drawer" id="drawer">
-    <div class="drawer-header">
+    <div class="drawer-head">
       <h3>Playlist</h3>
       <button class="nav-btn" id="closeDrawer">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -474,255 +480,216 @@
   
   <div class="toast" id="toast"></div>
   
-  <!-- Install Banner -->
-  <div class="install-banner hide" id="installBanner">
+  <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
     <span>Install App</span>
-    <button class="install-btn" id="installBtn">Install</button>
-    <button class="close-install" id="closeInstall">
+    <button class="i-btn" id="installBtn">Install</button>
+    <button class="i-close" id="closeInstall">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
   </div>
 
   <script>
-    // ============ CONFIG ============
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link`;
     
-    // ============ STATE ============
     let player = null;
     let videos = [];
-    let currentIdx = 0;
-    let isPlaying = false;
-    let duration = 0;
-    let isMuted = false;
-    let autoplay = true;
-    let playbackSpeed = 1;
-    let hideTimer = null;
-    let updateTimer = null;
-    let playerReady = false;
+    let idx = 0;
+    let playing = false;
+    let dur = 0;
+    let muted = false;
+    let autoNext = true;
+    let speed = 1;
+    let hideT = null;
+    let updT = null;
+    let ready = false;
     
-    // ============ DOM ============
     const $ = id => document.getElementById(id);
     const loader = $('loader');
     const loaderText = $('loaderText');
     const ui = $('ui');
-    const videoTitle = $('videoTitle');
-    const videoCount = $('videoCount');
-    const curTime = $('curTime');
-    const durTime = $('durTime');
-    const progressBar = $('progressBar');
-    const progressFill = $('progressFill');
-    const playIcon = $('playIcon');
-    const pauseIcon = $('pauseIcon');
-    const volIcon = $('volIcon');
-    const muteIcon = $('muteIcon');
-    const playBig = $('playBig');
-    const centerArea = $('centerArea');
-    const tapLeft = $('tapLeft');
-    const tapRight = $('tapRight');
+    const vTitle = $('vTitle');
+    const vCount = $('vCount');
+    const curT = $('curT');
+    const durT = $('durT');
+    const progBar = $('progBar');
+    const progFill = $('progFill');
+    const icPlay = $('icPlay');
+    const icPause = $('icPause');
+    const icVol = $('icVol');
+    const icMute = $('icMute');
+    const bigPlay = $('bigPlay');
+    const center = $('center');
+    const tapL = $('tapL');
+    const tapR = $('tapR');
     const drawer = $('drawer');
-    const drawerOverlay = $('drawerOverlay');
+    const drawerBg = $('drawerBg');
     const drawerList = $('drawerList');
     const toast = $('toast');
     
-    // ============ UTILITIES ============
-    function formatTime(sec) {
-      if (!sec || isNaN(sec)) return '0:00';
-      const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60);
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    function fmt(s) {
+      if (!s || isNaN(s)) return '0:00';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
     }
     
-    function showToast(msg) {
-      toast.textContent = msg;
+    function msg(t) {
+      toast.textContent = t;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
+      setTimeout(() => toast.classList.remove('show'), 1500);
     }
     
-    function extractVideoId(url) {
+    function getVid(url) {
       if (!url) return null;
-      const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
-      return match ? match[1] : null;
+      const m = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
+      return m ? m[1] : null;
     }
     
-    // ============ UI CONTROL ============
+    // UI visibility
     function showUI() {
-      ui.classList.add('show');
-      clearTimeout(hideTimer);
+      ui.classList.add('visible');
+      clearTimeout(hideT);
     }
     
     function hideUI() {
-      if (isPlaying) {
-        ui.classList.remove('show');
-      }
+      if (playing) ui.classList.remove('visible');
     }
     
-    function scheduleHideUI() {
-      clearTimeout(hideTimer);
-      if (isPlaying) {
-        hideTimer = setTimeout(hideUI, 3000);
-      }
+    function autoHide() {
+      clearTimeout(hideT);
+      if (playing) hideT = setTimeout(hideUI, 3000);
     }
     
-    function setPausedState(paused) {
-      if (paused) {
-        ui.classList.add('paused');
-        playIcon.style.display = 'block';
-        pauseIcon.style.display = 'none';
-        clearTimeout(hideTimer);
+    function setPlayState(isPlay) {
+      playing = isPlay;
+      if (isPlay) {
+        icPlay.style.display = 'none';
+        icPause.style.display = 'block';
+        bigPlay.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        autoHide();
       } else {
-        ui.classList.remove('paused');
-        playIcon.style.display = 'none';
-        pauseIcon.style.display = 'block';
-        scheduleHideUI();
+        icPlay.style.display = 'block';
+        icPause.style.display = 'none';
+        bigPlay.querySelector('svg').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        showUI();
       }
     }
     
-    // ============ PROGRESS UPDATE ============
-    function startProgressUpdate() {
-      stopProgressUpdate();
-      updateProgress();
-      updateTimer = setInterval(updateProgress, 500);
+    // Progress
+    function startUpd() {
+      stopUpd();
+      upd();
+      updT = setInterval(upd, 500);
     }
     
-    function stopProgressUpdate() {
-      if (updateTimer) {
-        clearInterval(updateTimer);
-        updateTimer = null;
-      }
+    function stopUpd() {
+      if (updT) { clearInterval(updT); updT = null; }
     }
     
-    function updateProgress() {
-      if (!player || !playerReady) return;
+    function upd() {
+      if (!player || !ready) return;
       try {
-        const current = player.getCurrentTime() || 0;
-        duration = player.getDuration() || duration;
-        const pct = duration > 0 ? (current / duration) * 100 : 0;
-        
-        progressFill.style.width = pct + '%';
-        curTime.textContent = formatTime(current);
-        durTime.textContent = formatTime(duration);
+        const c = player.getCurrentTime() || 0;
+        dur = player.getDuration() || dur;
+        const p = dur > 0 ? (c / dur) * 100 : 0;
+        progFill.style.width = p + '%';
+        curT.textContent = fmt(c);
+        durT.textContent = fmt(dur);
       } catch(e) {}
     }
     
-    // ============ PLAYLIST ============
-    async function loadPlaylist() {
+    // Load playlist
+    async function loadData() {
       try {
         loaderText.textContent = 'Loading playlist...';
-        
         const res = await fetch(SHEET_URL);
-        const text = await res.text();
-        const json = JSON.parse(text.substring(47, text.length - 2));
+        const txt = await res.text();
+        const json = JSON.parse(txt.substring(47, txt.length - 2));
         
         videos = [];
         for (const row of json.table.rows) {
           if (row.c && row.c[1] && row.c[1].v) {
             const url = row.c[1].v;
-            const id = extractVideoId(url);
+            const id = getVid(url);
             if (id) {
-              // Get title from sheet or use video ID
               let title = row.c[0]?.v || '';
-              if (!title || title.trim() === '') {
-                title = 'Video ' + (videos.length + 1);
-              }
+              if (!title.trim()) title = 'Video ' + (videos.length + 1);
               videos.push({ id, title, url });
             }
           }
         }
         
-        if (videos.length === 0) {
-          showError('No videos found in playlist');
+        if (!videos.length) {
+          showErr('No videos found');
           return;
         }
         
-        // Restore saved position
         try {
-          const saved = localStorage.getItem('vp_idx');
-          if (saved) {
-            currentIdx = Math.min(parseInt(saved) || 0, videos.length - 1);
-          }
+          const s = localStorage.getItem('vp_idx');
+          if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1);
         } catch(e) {}
         
-        renderPlaylist();
+        renderList();
         loaderText.textContent = 'Loading player...';
-        loadYouTubeAPI();
-        
-        // Fetch real titles in background
-        fetchYouTubeTitles();
-        
+        loadAPI();
+        fetchTitles();
       } catch(e) {
-        showError('Failed to load playlist');
+        showErr('Failed to load');
       }
     }
     
-    function showError(msg) {
-      loader.innerHTML = `
-        <div class="error-box">
-          <p>${msg}</p>
-          <button onclick="location.reload()">Retry</button>
-        </div>
-      `;
+    function showErr(m) {
+      loader.innerHTML = '<div class="err-box"><p>' + m + '</p><button onclick="location.reload()">Retry</button></div>';
     }
     
-    function renderPlaylist() {
-      drawerList.innerHTML = videos.map((v, i) => `
-        <div class="playlist-item${i === currentIdx ? ' active' : ''}" data-idx="${i}">
-          <span class="num">${i + 1}</span>
-          <span class="name">${v.title}</span>
-        </div>
-      `).join('');
+    function renderList() {
+      drawerList.innerHTML = videos.map((v, i) => 
+        '<div class="pl-item' + (i === idx ? ' active' : '') + '" data-i="' + i + '"><span class="num">' + (i + 1) + '</span><span class="name">' + v.title + '</span></div>'
+      ).join('');
     }
     
-    // Fetch real YouTube titles
-    async function fetchYouTubeTitles() {
+    async function fetchTitles() {
       for (let i = 0; i < videos.length; i++) {
         if (videos[i].title.startsWith('Video ')) {
           try {
-            const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videos[i].id}`);
-            const data = await res.json();
-            if (data.title) {
-              videos[i].title = data.title;
-              // Update current title if this is the current video
-              if (i === currentIdx) {
-                videoTitle.textContent = data.title;
-              }
-              // Update playlist
-              const item = drawerList.querySelector(`[data-idx="${i}"] .name`);
-              if (item) item.textContent = data.title;
+            const r = await fetch('https://noembed.com/embed?url=https://www.youtube.com/watch?v=' + videos[i].id);
+            const d = await r.json();
+            if (d.title) {
+              videos[i].title = d.title;
+              if (i === idx) vTitle.textContent = d.title;
+              const el = drawerList.querySelector('[data-i="' + i + '"] .name');
+              if (el) el.textContent = d.title;
             }
           } catch(e) {}
         }
       }
     }
     
-    // ============ YOUTUBE PLAYER ============
-    function loadYouTubeAPI() {
+    // YouTube player
+    function loadAPI() {
       if (window.YT && window.YT.Player) {
         createPlayer();
         return;
       }
-      
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
+      const s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
     }
     
     window.onYouTubeIframeAPIReady = function() {
-      if (videos.length > 0) {
-        createPlayer();
-      }
+      if (videos.length) createPlayer();
     };
     
     function createPlayer() {
-      const video = videos[currentIdx];
-      if (!video) return;
+      const v = videos[idx];
+      if (!v) return;
       
-      updateTitleDisplay();
+      updTitle();
       
       player = new YT.Player('player', {
-        videoId: video.id,
-        host: 'https://www.youtube-nocookie.com',
+        videoId: v.id,
         playerVars: {
           autoplay: 1,
           controls: 0,
@@ -732,373 +699,268 @@
           iv_load_policy: 3,
           modestbranding: 1,
           playsinline: 1,
-          rel: 0
+          rel: 0,
+          origin: location.origin
         },
         events: {
-          onReady: onPlayerReady,
-          onStateChange: onPlayerStateChange,
-          onError: onPlayerError
+          onReady: onReady,
+          onStateChange: onState,
+          onError: onErr
         }
       });
     }
     
-    function onPlayerReady(event) {
-      playerReady = true;
+    function onReady() {
+      ready = true;
       loader.classList.add('hide');
-      
-      duration = player.getDuration() || 0;
-      durTime.textContent = formatTime(duration);
-      
-      // Apply saved settings
-      player.setPlaybackRate(playbackSpeed);
-      
+      dur = player.getDuration() || 0;
+      durT.textContent = fmt(dur);
+      player.setPlaybackRate(speed);
       showUI();
-      scheduleHideUI();
-      startProgressUpdate();
-      
-      // Auto play
+      autoHide();
+      startUpd();
       player.playVideo();
     }
     
-    function onPlayerStateChange(event) {
-      const state = event.data;
-      
-      switch(state) {
-        case YT.PlayerState.PLAYING:
-          isPlaying = true;
-          loader.classList.add('hide');
-          setPausedState(false);
-          startProgressUpdate();
-          break;
-          
-        case YT.PlayerState.PAUSED:
-          isPlaying = false;
-          setPausedState(true);
-          stopProgressUpdate();
-          savePosition();
-          break;
-          
-        case YT.PlayerState.BUFFERING:
-          loaderText.textContent = 'Buffering...';
-          loader.classList.remove('hide');
-          break;
-          
-        case YT.PlayerState.ENDED:
-          loader.classList.add('hide');
-          if (autoplay && currentIdx < videos.length - 1) {
-            currentIdx++;
-            loadNewVideo();
-          } else {
-            isPlaying = false;
-            setPausedState(true);
-          }
-          break;
-          
-        case YT.PlayerState.CUED:
-          loader.classList.add('hide');
-          break;
+    function onState(e) {
+      const s = e.data;
+      if (s === YT.PlayerState.PLAYING) {
+        loader.classList.add('hide');
+        setPlayState(true);
+        startUpd();
+      } else if (s === YT.PlayerState.PAUSED) {
+        setPlayState(false);
+        stopUpd();
+        save();
+      } else if (s === YT.PlayerState.BUFFERING) {
+        loaderText.textContent = 'Buffering...';
+        loader.classList.remove('hide');
+      } else if (s === YT.PlayerState.ENDED) {
+        loader.classList.add('hide');
+        if (autoNext && idx < videos.length - 1) {
+          idx++;
+          loadVid();
+        } else {
+          setPlayState(false);
+        }
+      } else if (s === YT.PlayerState.CUED) {
+        loader.classList.add('hide');
       }
     }
     
-    function onPlayerError(event) {
-      console.error('Player error:', event.data);
+    function onErr(e) {
       loader.classList.add('hide');
-      showToast('Video error - try next');
+      msg('Error - try next');
     }
     
-    function loadNewVideo() {
-      if (!player || !playerReady || !videos[currentIdx]) return;
-      
+    function loadVid() {
+      if (!player || !ready || !videos[idx]) return;
       loaderText.textContent = 'Loading...';
       loader.classList.remove('hide');
-      
-      updateTitleDisplay();
-      renderPlaylist();
-      savePosition();
-      
-      player.loadVideoById(videos[currentIdx].id);
+      updTitle();
+      renderList();
+      save();
+      player.loadVideoById(videos[idx].id);
     }
     
-    function updateTitleDisplay() {
-      const video = videos[currentIdx];
-      if (video) {
-        videoTitle.textContent = video.title;
-        videoCount.textContent = `${currentIdx + 1}/${videos.length}`;
+    function updTitle() {
+      const v = videos[idx];
+      if (v) {
+        vTitle.textContent = v.title;
+        vCount.textContent = (idx + 1) + '/' + videos.length;
       }
     }
     
-    function savePosition() {
-      try {
-        localStorage.setItem('vp_idx', currentIdx.toString());
-      } catch(e) {}
+    function save() {
+      try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {}
     }
     
-    // ============ CONTROLS ============
-    function togglePlay() {
-      if (!player || !playerReady) return;
-      
-      if (isPlaying) {
-        player.pauseVideo();
-      } else {
-        player.playVideo();
-      }
+    // Controls
+    function toggle() {
+      if (!player || !ready) return;
+      if (playing) player.pauseVideo();
+      else player.playVideo();
     }
     
     function toggleMute() {
-      if (!player || !playerReady) return;
-      
-      isMuted = !isMuted;
-      if (isMuted) {
+      if (!player || !ready) return;
+      muted = !muted;
+      if (muted) {
         player.mute();
-        volIcon.style.display = 'none';
-        muteIcon.style.display = 'block';
+        icVol.style.display = 'none';
+        icMute.style.display = 'block';
       } else {
         player.unMute();
-        volIcon.style.display = 'block';
-        muteIcon.style.display = 'none';
+        icVol.style.display = 'block';
+        icMute.style.display = 'none';
       }
     }
     
-    function seekBy(seconds) {
-      if (!player || !playerReady) return;
-      const current = player.getCurrentTime() || 0;
-      player.seekTo(Math.max(0, current + seconds), true);
+    function seekBy(sec) {
+      if (!player || !ready) return;
+      player.seekTo(Math.max(0, player.getCurrentTime() + sec), true);
     }
     
-    function seekTo(percent) {
-      if (!player || !playerReady || !duration) return;
-      player.seekTo(duration * percent, true);
+    function seekTo(pct) {
+      if (!player || !ready || !dur) return;
+      player.seekTo(dur * pct, true);
     }
     
-    function cycleSpeed() {
-      const speeds = [1, 1.25, 1.5, 1.75, 2, 0.5, 0.75];
-      const idx = speeds.indexOf(playbackSpeed);
-      playbackSpeed = speeds[(idx + 1) % speeds.length];
-      
-      if (player && playerReady) {
-        player.setPlaybackRate(playbackSpeed);
-      }
-      $('speedBtn').textContent = playbackSpeed + 'x';
-      showToast('Speed: ' + playbackSpeed + 'x');
+    function cycleSpd() {
+      const spds = [1, 1.25, 1.5, 1.75, 2, 0.5, 0.75];
+      const i = spds.indexOf(speed);
+      speed = spds[(i + 1) % spds.length];
+      if (player && ready) player.setPlaybackRate(speed);
+      $('spdBtn').textContent = speed + 'x';
+      msg('Speed: ' + speed + 'x');
     }
     
-    function toggleAutoplay() {
-      autoplay = !autoplay;
-      $('autoplayBtn').classList.toggle('active', autoplay);
-      showToast('Autoplay: ' + (autoplay ? 'On' : 'Off'));
+    function toggleAuto() {
+      autoNext = !autoNext;
+      $('autoBtn').classList.toggle('on', autoNext);
+      msg('Autoplay: ' + (autoNext ? 'On' : 'Off'));
     }
     
-    function toggleFullscreen() {
-      const wrap = $('wrap');
+    function toggleFS() {
+      const w = $('wrap');
       if (!document.fullscreenElement) {
-        wrap.requestFullscreen?.() || wrap.webkitRequestFullscreen?.();
+        (w.requestFullscreen || w.webkitRequestFullscreen || w.msRequestFullscreen).call(w);
       } else {
-        document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
       }
     }
     
-    function prevVideo() {
-      currentIdx = (currentIdx - 1 + videos.length) % videos.length;
-      loadNewVideo();
-    }
-    
-    function nextVideo() {
-      currentIdx = (currentIdx + 1) % videos.length;
-      loadNewVideo();
-    }
+    function prev() { idx = (idx - 1 + videos.length) % videos.length; loadVid(); }
+    function next() { idx = (idx + 1) % videos.length; loadVid(); }
     
     function openDrawer() {
       drawer.classList.add('open');
-      drawerOverlay.classList.add('open');
+      drawerBg.classList.add('open');
     }
     
     function closeDrawer() {
       drawer.classList.remove('open');
-      drawerOverlay.classList.remove('open');
+      drawerBg.classList.remove('open');
     }
     
-    // ============ EVENT LISTENERS ============
+    // Events
+    $('playBtn').onclick = e => { e.stopPropagation(); toggle(); };
+    bigPlay.onclick = e => { e.stopPropagation(); toggle(); };
+    $('muteBtn').onclick = e => { e.stopPropagation(); toggleMute(); };
+    $('spdBtn').onclick = e => { e.stopPropagation(); cycleSpd(); };
+    $('autoBtn').onclick = e => { e.stopPropagation(); toggleAuto(); };
+    $('fsBtn').onclick = e => { e.stopPropagation(); toggleFS(); };
+    $('prevBtn').onclick = e => { e.stopPropagation(); prev(); };
+    $('nextBtn').onclick = e => { e.stopPropagation(); next(); };
+    $('listBtn').onclick = e => { e.stopPropagation(); openDrawer(); };
+    $('closeDrawer').onclick = e => { e.stopPropagation(); closeDrawer(); };
+    drawerBg.onclick = closeDrawer;
     
-    // Play/Pause buttons
-    $('playPauseBtn').onclick = function(e) {
-      e.stopPropagation();
-      togglePlay();
-    };
-    
-    playBig.onclick = function(e) {
-      e.stopPropagation();
-      togglePlay();
-    };
-    
-    // Other control buttons
-    $('muteBtn').onclick = function(e) { e.stopPropagation(); toggleMute(); };
-    $('speedBtn').onclick = function(e) { e.stopPropagation(); cycleSpeed(); };
-    $('autoplayBtn').onclick = function(e) { e.stopPropagation(); toggleAutoplay(); };
-    $('fullscreenBtn').onclick = function(e) { e.stopPropagation(); toggleFullscreen(); };
-    $('prevBtn').onclick = function(e) { e.stopPropagation(); prevVideo(); };
-    $('nextBtn').onclick = function(e) { e.stopPropagation(); nextVideo(); };
-    $('playlistBtn').onclick = function(e) { e.stopPropagation(); openDrawer(); };
-    $('closeDrawer').onclick = function(e) { e.stopPropagation(); closeDrawer(); };
-    drawerOverlay.onclick = closeDrawer;
-    
-    // Playlist item click
-    drawerList.onclick = function(e) {
-      const item = e.target.closest('.playlist-item');
-      if (item) {
-        currentIdx = parseInt(item.dataset.idx);
-        loadNewVideo();
+    drawerList.onclick = e => {
+      const it = e.target.closest('.pl-item');
+      if (it) {
+        idx = parseInt(it.dataset.i);
+        loadVid();
         closeDrawer();
       }
     };
     
-    // Progress bar
-    progressBar.onclick = function(e) {
+    progBar.onclick = e => {
       e.stopPropagation();
-      const rect = progressBar.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      seekTo(Math.max(0, Math.min(1, pct)));
+      const r = progBar.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      seekTo(p);
     };
     
-    // Center area tap handling
-    let lastTapTime = 0;
-    
-    centerArea.onclick = function(e) {
-      if (e.target === playBig || e.target.closest('.play-big')) {
-        return; // Handled by playBig onclick
-      }
+    // Touch handling
+    let lastTap = 0;
+    center.onclick = e => {
+      if (e.target === bigPlay || e.target.closest('.play-big')) return;
       
       const now = Date.now();
-      const timeDiff = now - lastTapTime;
-      const rect = centerArea.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
+      const diff = now - lastTap;
+      const r = center.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
       
-      if (timeDiff < 300) {
+      if (diff < 300) {
         // Double tap
         if (x < 0.35) {
           seekBy(-10);
-          tapLeft.classList.add('show');
-          setTimeout(() => tapLeft.classList.remove('show'), 500);
+          tapL.classList.add('show');
+          setTimeout(() => tapL.classList.remove('show'), 400);
         } else if (x > 0.65) {
           seekBy(10);
-          tapRight.classList.add('show');
-          setTimeout(() => tapRight.classList.remove('show'), 500);
+          tapR.classList.add('show');
+          setTimeout(() => tapR.classList.remove('show'), 400);
         } else {
-          toggleFullscreen();
+          toggleFS();
         }
-        lastTapTime = 0;
+        lastTap = 0;
       } else {
-        // Single tap - toggle UI
-        lastTapTime = now;
+        lastTap = now;
         setTimeout(() => {
-          if (lastTapTime === now) {
-            if (ui.classList.contains('show')) {
+          if (lastTap === now) {
+            if (ui.classList.contains('visible') && playing) {
               hideUI();
             } else {
               showUI();
-              scheduleHideUI();
+              autoHide();
             }
           }
         }, 300);
       }
     };
     
-    // Keep controls visible when interacting with top/bottom
-    document.querySelector('.top').onclick = function(e) {
-      showUI();
-      scheduleHideUI();
-    };
+    document.querySelector('.top').onclick = () => { showUI(); autoHide(); };
+    document.querySelector('.bottom').onclick = () => { showUI(); autoHide(); };
     
-    document.querySelector('.bottom').onclick = function(e) {
-      showUI();
-      scheduleHideUI();
-    };
-    
-    // Keyboard shortcuts
-    document.onkeydown = function(e) {
+    // Keyboard
+    document.onkeydown = e => {
       if (e.target.tagName === 'INPUT') return;
-      
       switch(e.key) {
-        case ' ':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          seekBy(-10);
-          showToast('-10s');
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          seekBy(10);
-          showToast('+10s');
-          break;
-        case 'm':
-        case 'M':
-          toggleMute();
-          break;
-        case 'f':
-        case 'F':
-          toggleFullscreen();
-          break;
-        case 'n':
-        case 'N':
-          nextVideo();
-          break;
-        case 'p':
-        case 'P':
-          prevVideo();
-          break;
+        case ' ': e.preventDefault(); toggle(); break;
+        case 'ArrowLeft': e.preventDefault(); seekBy(-10); msg('-10s'); break;
+        case 'ArrowRight': e.preventDefault(); seekBy(10); msg('+10s'); break;
+        case 'm': case 'M': toggleMute(); break;
+        case 'f': case 'F': toggleFS(); break;
+        case 'n': case 'N': next(); break;
+        case 'p': case 'P': prev(); break;
       }
     };
     
-    // ============ PWA INSTALL ============
+    // PWA Install
     let deferredPrompt = null;
-    const installBanner = $('installBanner');
-    const installBtn = $('installBtn');
-    const closeInstall = $('closeInstall');
+    const installBar = $('installBar');
     
-    // Check if already installed as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                   window.matchMedia('(display-mode: fullscreen)').matches ||
                   window.navigator.standalone === true;
     
-    if (isPWA) {
-      installBanner.classList.add('hide');
+    if (!isPWA) {
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBar.classList.remove('hide');
+      });
     }
     
-    // Listen for install prompt
-    window.addEventListener('beforeinstallprompt', function(e) {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (!isPWA) {
-        installBanner.classList.remove('hide');
-      }
-    });
-    
-    // Install button click
-    installBtn.onclick = async function() {
+    $('installBtn').onclick = async () => {
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
-      const result = await deferredPrompt.userChoice;
-      if (result.outcome === 'accepted') {
-        showToast('App installed!');
-      }
+      const r = await deferredPrompt.userChoice;
+      if (r.outcome === 'accepted') msg('Installed!');
       deferredPrompt = null;
-      installBanner.classList.add('hide');
+      installBar.classList.add('hide');
     };
     
-    // Close install banner
-    closeInstall.onclick = function() {
-      installBanner.classList.add('hide');
-    };
+    $('closeInstall').onclick = () => installBar.classList.add('hide');
     
-    // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(function() {});
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     }
     
-    // ============ START ============
-    loadPlaylist();
+    // Start
+    loadData();
   </script>
 </body>
 </html>
