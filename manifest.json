@@ -1,16 +1,14 @@
 {
   "name": "YouTube Playlist Player",
   "short_name": "Video Player",
-  "description": "A custom YouTube playlist player with Google Sheets integration",
+  "description": "YouTube playlist player with Google Sheets",
   "start_url": "./index.html",
   "scope": "./",
-  "id": "videoplayer",
+  "id": "ytplayer",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#0f0f1a",
   "theme_color": "#6366f1",
-  "categories": ["entertainment", "video"],
-  "prefer_related_applications": false,
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
@@ -23,16 +21,6 @@
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "maskable"
-    },
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
-      "sizes": "144x144",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
-  ],
-  "display_override": ["fullscreen", "standalone"],
-  "launch_handler": {
-    "client_mode": "navigate-existing"
-  }
+  ]
 }
