@@ -17,7 +17,7 @@
   <meta name="screen-orientation" content="landscape">
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/videoplayer/manifest.json">
   
   <!-- Apple Touch Icon -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='22' fill='%236366f1'/><path d='M70 50v80l52-40z' fill='white'/></svg>">
@@ -25,273 +25,262 @@
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    * {
-      font-family: 'Inter', sans-serif;
-    }
+  /* Base font */
+  * {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
+  body {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    color: white;
+  }
+
+  /* PWA Standalone Mode */
+  @media (display-mode: fullscreen), (display-mode: standalone) {
     body {
-      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
-      min-height: 100vh;
+      padding: 0;
     }
-
-    /* PWA Standalone Mode Styles */
-    @media (display-mode: fullscreen), (display-mode: standalone) {
-      body {
-        padding: 0;
-      }
-      .player-container {
-        max-width: 100vw;
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-      }
-      #header, #shortcuts {
-        display: none;
-      }
-    }
-
     .player-container {
-      aspect-ratio: 16/9;
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
     }
+    #header, #shortcuts {
+      display: none;
+    }
+  }
 
-    .glass {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+  .player-container {
+    aspect-ratio: 16/9;
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+  }
 
-    .glass-dark {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(20px);
-    }
+  /* Glass and dark glass effects */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(99, 102, 241, 0.5);
-      border-radius: 3px;
-    }
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(20px);
+  }
 
-    /* Seek Bar Styling */
-    .seek-bar {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 4px;
-      background: linear-gradient(to right, #6366f1 var(--progress, 0%), rgba(255,255,255,0.2) var(--progress, 0%));
-      border-radius: 10px;
-      outline: none;
-      cursor: pointer;
-      transition: height 0.2s ease;
-    }
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.5);
+    border-radius: 3px;
+  }
 
-    .seek-bar:hover {
-      height: 6px;
-    }
+  /* Seek bar */
+  .seek-bar {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: linear-gradient(to right, #6366f1 var(--progress, 0%), rgba(255,255,255,0.2) var(--progress, 0%));
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+    transition: height 0.2s ease;
+  }
+  .seek-bar:hover {
+    height: 6px;
+  }
+  .seek-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .seek-bar:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
+  }
+  .seek-bar::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6366f1;
+    border: none;
+  }
 
-    .seek-bar::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #6366f1;
-      cursor: pointer;
-      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+  /* Volume slider */
+  .volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(to right, #6366f1 var(--volume, 100%), rgba(255,255,255,0.2) var(--volume, 100%));
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+  }
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+  }
+  .volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    cursor: pointer;
+  }
 
-    .seek-bar:hover::-webkit-slider-thumb {
-      transform: scale(1.2);
-      box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
-    }
+  /* Control buttons */
+  .ctrl-btn {
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+  }
+  .ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+  }
+  .ctrl-btn:active {
+    transform: scale(0.95);
+  }
 
-    .seek-bar::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #6366f1;
-      cursor: pointer;
-      border: none;
-    }
+  /* Loader */
+  .loader {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-    /* Volume Slider */
-    .volume-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 80px;
-      height: 4px;
-      background: linear-gradient(to right, #6366f1 var(--volume, 100%), rgba(255,255,255,0.2) var(--volume, 100%));
-      border-radius: 10px;
-      outline: none;
-      cursor: pointer;
-    }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .animate-pulse-slow {
+    animation: pulse 2s ease-in-out infinite;
+  }
 
-    .volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: white;
-      cursor: pointer;
-    }
+  /* Overlay play button */
+  .overlay-play {
+    width: 80px;
+    height: 80px;
+    background: rgba(99, 102, 241, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+  }
+  .overlay-play:hover {
+    transform: scale(1.1);
+    background: #6366f1;
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+  }
 
-    .volume-slider::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: white;
-      cursor: pointer;
-      border: none;
-    }
+  /* Navigation buttons */
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .nav-btn:hover {
+    transform: scale(1.1);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
 
-    /* Control Button Styles */
-    .ctrl-btn {
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-    }
+  /* Tooltip */
+  .tooltip {
+    position: relative;
+  }
+  .tooltip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    font-size: 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+  }
+  .tooltip:hover::after {
+    opacity: 1;
+  }
 
-    .ctrl-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: scale(1.1);
-    }
+  /* Keyboard shortcut */
+  kbd {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: monospace;
+  }
 
-    .ctrl-btn:active {
-      transform: scale(0.95);
-    }
+  /* Install banner */
+  .install-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    animation: slideDown 0.5s ease;
+  }
+  @keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+</style>
 
-    /* Loading Spinner */
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      border-left-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
-
-    .animate-pulse-slow {
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    /* Overlay Play Button */
-    .overlay-play {
-      width: 80px;
-      height: 80px;
-      background: rgba(99, 102, 241, 0.9);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-    }
-
-    .overlay-play:hover {
-      transform: scale(1.1);
-      background: #6366f1;
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
-    }
-
-    /* Nav Button Styles */
-    .nav-btn {
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .nav-btn:hover {
-      transform: scale(1.1);
-      border-color: rgba(99, 102, 241, 0.5);
-    }
-
-    /* Tooltip */
-    .tooltip {
-      position: relative;
-    }
-
-    .tooltip::after {
-      content: attr(data-tip);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 6px 10px;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      font-size: 12px;
-      border-radius: 6px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.2s ease;
-      margin-bottom: 8px;
-    }
-
-    .tooltip:hover::after {
-      opacity: 1;
-    }
-
-    /* Keyboard shortcut indicator */
-    kbd {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-family: monospace;
-    }
-
-    /* Install Banner */
-    .install-banner {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      animation: slideDown 0.5s ease;
-    }
-
-    @keyframes slideDown {
-      from {
-        transform: translateY(-100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-  </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4 overflow-hidden">
 
-  <!-- Install Banner (shown when installable) -->
+  <!-- Install Banner -->
   <div id="installBanner" class="hidden fixed top-0 left-0 right-0 z-50 install-banner p-3 shadow-lg">
     <div class="flex items-center justify-between max-w-4xl mx-auto">
       <div class="flex items-center gap-3 text-white">
@@ -326,17 +315,11 @@
 
   <!-- Main Player Container -->
   <div class="player-container relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20 group" id="playerContainer">
-    
-    <!-- Video Player -->
     <div id="player" class="w-full h-full"></div>
-
-    <!-- Loading Overlay -->
     <div id="loadingOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30">
       <div class="loader mb-4"></div>
       <p class="text-white text-sm animate-pulse-slow">Loading video...</p>
     </div>
-
-    <!-- Center Play Button Overlay -->
     <div id="overlayPlay" class="absolute inset-0 flex items-center justify-center z-20 bg-black/30 hidden">
       <div class="overlay-play">
         <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -345,7 +328,7 @@
       </div>
     </div>
 
-    <!-- Top Navigation Bar -->
+        <!-- Top Navigation Bar -->
     <div class="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20 bg-gradient-to-b from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
       <div class="flex items-center gap-2">
         <button id="prevBtn" class="nav-btn glass text-white tooltip" data-tip="Previous (P)">
@@ -450,7 +433,20 @@
     </p>
   </div>
 
-  <script>
+  <!-- ===== Keyboard Shortcuts ===== -->
+  <div id="shortcuts" class="mt-6 text-center">
+    <p class="text-gray-500 text-xs">
+      <span class="hidden md:inline">
+        <kbd>Space</kbd> Play/Pause &nbsp;
+        <kbd>←</kbd><kbd>→</kbd> Seek &nbsp;
+        <kbd>↑</kbd><kbd>↓</kbd> Volume &nbsp;
+        <kbd>M</kbd> Mute &nbsp;
+        <kbd>F</kbd> Fullscreen
+      </span>
+    </p>
+  </div>
+
+   <script>
     // ===== PWA Installation Logic =====
     let deferredPrompt;
     const installBanner = document.getElementById('installBanner');
@@ -460,7 +456,7 @@
     // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
+        navigator.serviceWorker.register('/videoplayer/sw.js')
           .then((registration) => {
             console.log('ServiceWorker registered:', registration.scope);
           })
@@ -470,82 +466,55 @@
       });
     }
 
-    // Listen for beforeinstallprompt event
+    // Listen for beforeinstallprompt
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later
       deferredPrompt = e;
-      // Show the install banner
       installBanner.classList.remove('hidden');
       console.log('Install prompt available');
     });
 
-    // Handle install button click
     installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) {
-        console.log('No deferred prompt available');
-        return;
-      }
-      // Show the install prompt
+      if (!deferredPrompt) return;
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
-      // Clear the deferred prompt
+      console.log(`User response: ${outcome}`);
       deferredPrompt = null;
-      // Hide the banner
       installBanner.classList.add('hidden');
     });
 
-    // Dismiss banner
     dismissBanner.addEventListener('click', () => {
       installBanner.classList.add('hidden');
-      // Store dismissal in localStorage
       localStorage.setItem('installBannerDismissed', 'true');
     });
 
-    // Check if already dismissed
     if (localStorage.getItem('installBannerDismissed') === 'true') {
       installBanner.classList.add('hidden');
     }
 
-    // Listen for successful installation
     window.addEventListener('appinstalled', () => {
       console.log('App was installed');
       installBanner.classList.add('hidden');
       deferredPrompt = null;
     });
 
-    // Lock to landscape when in standalone mode
+    // Lock to landscape if standalone
     if (window.matchMedia('(display-mode: standalone)').matches || 
         window.matchMedia('(display-mode: fullscreen)').matches) {
-      // Try to lock orientation to landscape
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch((err) => {
+        screen.orientation.lock('landscape').catch(err => {
           console.log('Orientation lock failed:', err);
         });
       }
     }
 
     // ===== Original Player Code =====
-    
-    // Configuration
     const sheetId = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const sheetName = "link";
     const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
-    // State
-    let player;
-    let videoLinks = [];
-    let videoTitles = [];
-    let currentIndex = 0;
-    let isPlaying = false;
-    let duration = 0;
-    let isMuted = false;
-    let savedVolume = 100;
+    let player, videoLinks = [], videoTitles = [], currentIndex = 0, isPlaying = false, duration = 0, isMuted = false, savedVolume = 100;
 
-    // DOM Elements
     const elements = {
       seekBar: document.getElementById("seekBar"),
       currentTime: document.getElementById("currentTime"),
@@ -573,22 +542,18 @@
       pipBtn: document.getElementById("pipBtn")
     };
 
-    // YouTube IFrame API
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
 
-    // Fetch Google Sheet data
     async function fetchSheetData() {
       try {
-        showLoading(true);
+        elements.loadingOverlay.style.display = 'flex';
         const res = await fetch(sheetUrl);
         const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
-        
         videoLinks = [];
         videoTitles = [];
-        
         json.table.rows.forEach(row => {
           const title = row.c[0]?.v || 'Untitled Video';
           const link = row.c[1]?.v;
@@ -597,7 +562,6 @@
             videoLinks.push(link);
           }
         });
-
         if (videoLinks.length > 0) {
           elements.playlistInfo.textContent = `${videoLinks.length} videos in playlist`;
           loadVideo(currentIndex);
@@ -612,19 +576,13 @@
 
     function showError(message) {
       elements.loadingOverlay.innerHTML = `
-        <div class="text-center">
-          <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          <p class="text-white">${message}</p>
-          <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-            Try Again
-          </button>
+        <div class="text-center text-white">
+          <p>${message}</p>
+          <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-700">Try Again</button>
         </div>
       `;
     }
-
-    function showLoading(show) {
+     function showLoading(show) {
       elements.loadingOverlay.style.display = show ? 'flex' : 'none';
     }
 
