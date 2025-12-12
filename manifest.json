@@ -1,7 +1,7 @@
 {
   "name": "YouTube Playlist Player",
   "short_name": "Video Player",
-  "description": "A beautiful YouTube playlist player with Google Sheets integration",
+  "description": "A fast YouTube playlist player",
   "start_url": "./index.html",
   "scope": "./",
   "id": "ytplayer",
@@ -22,15 +22,6 @@
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect fill='%230f0f1a' width='1280' height='720'/%3E%3Crect fill='%231a1a2e' x='140' y='60' width='1000' height='562' rx='16'/%3E%3Cpolygon fill='%236366f1' points='590,280 590,440 710,360'/%3E%3C/svg%3E",
-      "sizes": "1280x720",
-      "type": "image/svg+xml",
-      "form_factor": "wide",
-      "label": "Video Player"
     }
   ],
   "prefer_related_applications": false
