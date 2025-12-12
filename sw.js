@@ -1,62 +1,60 @@
-const CACHE_NAME = 'yt-player-v1';
+const CACHE_NAME = 'video-player-cache-v1';
 const urlsToCache = [
-  '/videoplayer/',
-  '/videoplayer/index.html',
-  '/videoplayer/manifest.json'
+  './',
+  './index.html'
 ];
 
-// Install event - cache files
-self.addEventListener('install', (event) => {
+// Install event - cache essential files
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
+      .then(cache => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .catch(err => {
+        console.log('Cache error:', err);
+      })
   );
+  // Activate immediately
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
-self.addEventListener('activate', (event) => {
+// Activate event - clean up old caches
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
+        cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
+  // Take control immediately
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response; // Return cached version
+    fetch(event.request)
+      .then(response => {
+        // Clone the response for caching
+        if (response && response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
         }
-        return fetch(event.request).then((response) => {
-          // Only cache GET requests with successful response
-          if (!response || response.status !== 200 || event.request.method !== 'GET') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          return response;
-        });
+        return response;
       })
       .catch(() => {
-        // Offline fallback to main page
-        return caches.match('/videoplayer/index.html');
+        // Fallback to cache if network fails
+        return caches.match(event.request);
       })
   );
 });
