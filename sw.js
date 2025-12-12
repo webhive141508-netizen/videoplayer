@@ -1,14 +1,17 @@
-// Minimal Service Worker for PWA Install capability
-// Version 3 - Fast loading
+// Service Worker v4 - Optimized for speed
+const CACHE_NAME = 'vp-v4';
+const OFFLINE_URL = './index.html';
 
-const CACHE_NAME = 'vp-v3';
-
-// Install - just activate immediately
+// Pre-cache on install
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => 
+      cache.addAll([OFFLINE_URL])
+    ).then(() => self.skipWaiting())
+  );
 });
 
-// Activate - take control immediately
+// Clean old caches on activate
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => 
@@ -17,34 +20,29 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch - Network first, fast fallback
+// Network-first strategy with cache fallback
 self.addEventListener('fetch', event => {
-  // Skip non-GET and streaming requests
   if (event.request.method !== 'GET') return;
   
   const url = new URL(event.request.url);
   
-  // Skip YouTube/Google API - always network
-  if (url.hostname.includes('youtube.com') || 
-      url.hostname.includes('ytimg.com') ||
-      url.hostname.includes('googlevideo.com') ||
-      url.hostname.includes('google.com')) {
+  // Skip external resources - always use network
+  if (!url.origin.includes(self.location.origin) &&
+      !url.hostname.includes('jsdelivr.net') &&
+      !url.hostname.includes('fonts.googleapis.com') &&
+      !url.hostname.includes('fonts.gstatic.com')) {
     return;
   }
   
-  // For same-origin requests - network first with cache fallback
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Cache successful responses
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-  }
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request) || caches.match(OFFLINE_URL))
+  );
 });
