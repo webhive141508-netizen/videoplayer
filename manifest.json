@@ -1,35 +1,26 @@
 {
   "name": "YouTube Playlist Player",
-  "short_name": "YT Player",
-  "description": "A YouTube playlist player powered by Google Sheets",
-  "start_url": "/videoplayer/index.html",
+  "short_name": "Video Player",
+  "description": "A custom YouTube playlist player with Google Sheets integration",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#0f0f1a",
   "theme_color": "#6366f1",
-  "categories": ["entertainment", "music"],
+  "categories": ["entertainment", "video"],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%236366f1'/><path d='M76 56v80l56-40z' fill='white'/></svg>",
-      "sizes": "192x192",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='64' fill='%236366f1'/><path d='M200 144v224l160-112z' fill='white'/></svg>",
-      "sizes": "512x512",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%236366f1' width='512' height='512' rx='80'/%3E%3Cpolygon fill='white' points='192,128 192,384 384,256'/%3E%3C/svg%3E",
+      "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
-  ],
-  "screenshots": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'><rect width='1280' height='720' fill='%230f0f1a'/><rect x='140' y='110' width='1000' height='500' rx='16' fill='%23000'/><path d='M600 320v80l60-40z' fill='%236366f1'/></svg>",
-      "sizes": "1280x720",
-      "type": "image/svg+xml",
-      "form_factor": "wide"
-    }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false
+  ]
 }
