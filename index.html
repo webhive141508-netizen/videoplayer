@@ -7,9 +7,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <link rel="manifest" href="manifest.json">
   <title>Video Player</title>
   <style>
@@ -102,6 +99,13 @@
     }
     .nav-btn:active { background: rgba(255,255,255,0.3); }
     .nav-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    
+    /* Refresh button - green */
+    .nav-btn.refresh-btn { background: rgba(34, 197, 94, 0.3); }
+    .nav-btn.refresh-btn:active { background: rgba(34, 197, 94, 0.5); }
+    .nav-btn.refresh-btn.spinning svg {
+      animation: spin 1s linear infinite;
+    }
     
     .info {
       flex: 1;
@@ -300,6 +304,10 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .pl-item .name.loading {
+      color: #666;
+      font-style: italic;
+    }
     
     .toast {
       position: fixed;
@@ -315,6 +323,8 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
+      max-width: 90%;
+      text-align: center;
     }
     .toast.show { opacity: 1; }
     
@@ -373,34 +383,22 @@
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
-    /* Sync indicator */
-    .sync-indicator {
+    /* Status indicator */
+    .status {
       position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(34, 197, 94, 0.9);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 11px;
-      font-weight: 600;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.8);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      color: #888;
       z-index: 1000;
       display: none;
-      align-items: center;
-      gap: 6px;
     }
-    .sync-indicator.show { display: flex; }
-    .sync-indicator .dot {
-      width: 8px;
-      height: 8px;
-      background: white;
-      border-radius: 50%;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
+    .status.show { display: block; }
+    .status.success { background: rgba(34, 197, 94, 0.9); color: white; }
+    .status.error { background: rgba(239, 68, 68, 0.9); color: white; }
   </style>
 </head>
 <body>
@@ -424,6 +422,9 @@
           <div class="video-title" id="vTitle">Loading...</div>
           <div class="video-count" id="vCount">-/-</div>
         </div>
+        <button class="nav-btn refresh-btn" id="refreshBtn" title="Refresh Playlist">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
         <button class="nav-btn" id="listBtn">
           <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
         </button>
@@ -473,7 +474,7 @@
   <div class="drawer-bg" id="drawerBg"></div>
   <div class="drawer" id="drawer">
     <div class="drawer-head">
-      <h3>Playlist</h3>
+      <h3>Playlist (<span id="plCount">0</span>)</h3>
       <button class="nav-btn" id="closeDrawer">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
@@ -482,11 +483,7 @@
   </div>
   
   <div class="toast" id="toast"></div>
-  
-  <div class="sync-indicator" id="syncInd">
-    <span class="dot"></span>
-    <span>Syncing...</span>
-  </div>
+  <div class="status" id="status"></div>
   
   <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -498,179 +495,11 @@
   </div>
 
   <script>
-    // ============ AUTO-SYNC SYSTEM ============
+    // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link`;
+    const AUTO_REFRESH_INTERVAL = 15000; // Check every 15 seconds
     
-    // Check intervals (in milliseconds)
-    const SHEET_CHECK_INTERVAL = 10000; // Check sheet every 10 seconds
-    const APP_CHECK_INTERVAL = 30000;   // Check app files every 30 seconds
-    
-    let lastSheetData = null;
-    let lastAppHash = null;
-    
-    // Simple hash function
-    function hash(str) {
-      let h = 0;
-      for (let i = 0; i < str.length; i++) {
-        h = ((h << 5) - h) + str.charCodeAt(i);
-        h = h & h;
-      }
-      return h.toString();
-    }
-    
-    // Show sync indicator
-    function showSync() {
-      document.getElementById('syncInd').classList.add('show');
-    }
-    
-    function hideSync() {
-      document.getElementById('syncInd').classList.remove('show');
-    }
-    
-    // Fetch sheet data with cache busting
-    async function fetchSheetData() {
-      const url = SHEET_URL + '&_t=' + Date.now();
-      const res = await fetch(url, { 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      return await res.text();
-    }
-    
-    // Parse sheet data to get videos
-    function parseSheetData(txt) {
-      const json = JSON.parse(txt.substring(47, txt.length - 2));
-      const vids = [];
-      for (const row of json.table.rows) {
-        if (row.c && row.c[1] && row.c[1].v) {
-          const url = row.c[1].v;
-          const id = getVid(url);
-          if (id) {
-            let title = row.c[0]?.v || '';
-            if (!title.trim()) title = 'Video ' + (vids.length + 1);
-            vids.push({ id, title, url });
-          }
-        }
-      }
-      return vids;
-    }
-    
-    // Check for sheet changes
-    async function checkSheetChanges() {
-      try {
-        const data = await fetchSheetData();
-        const currentHash = hash(data);
-        
-        if (lastSheetData === null) {
-          lastSheetData = currentHash;
-          return null;
-        }
-        
-        if (currentHash !== lastSheetData) {
-          console.log('[SYNC] Sheet changed! Old:', lastSheetData, 'New:', currentHash);
-          lastSheetData = currentHash;
-          return parseSheetData(data);
-        }
-        
-        return null;
-      } catch (e) {
-        console.log('[SYNC] Sheet check error:', e);
-        return null;
-      }
-    }
-    
-    // Check for app file changes (index.html)
-    async function checkAppChanges() {
-      try {
-        const url = './index.html?_t=' + Date.now();
-        const res = await fetch(url, { 
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        });
-        const text = await res.text();
-        const currentHash = hash(text);
-        
-        if (lastAppHash === null) {
-          lastAppHash = currentHash;
-          return false;
-        }
-        
-        if (currentHash !== lastAppHash) {
-          console.log('[SYNC] App file changed!');
-          return true;
-        }
-        
-        return false;
-      } catch (e) {
-        console.log('[SYNC] App check error:', e);
-        return false;
-      }
-    }
-    
-    // Update playlist without reloading page
-    function updatePlaylist(newVideos) {
-      if (!newVideos || newVideos.length === 0) return;
-      
-      showSync();
-      
-      // Check if current video still exists
-      const currentId = videos[idx]?.id;
-      videos = newVideos;
-      
-      // Try to keep playing same video if it still exists
-      if (currentId) {
-        const newIdx = videos.findIndex(v => v.id === currentId);
-        if (newIdx >= 0) {
-          idx = newIdx;
-        } else {
-          idx = Math.min(idx, videos.length - 1);
-        }
-      }
-      
-      renderList();
-      updTitle();
-      
-      setTimeout(() => {
-        hideSync();
-        msg('Playlist updated!');
-      }, 500);
-      
-      console.log('[SYNC] Playlist updated with', videos.length, 'videos');
-    }
-    
-    // Main sync loop for sheet
-    async function sheetSyncLoop() {
-      const newVideos = await checkSheetChanges();
-      if (newVideos) {
-        updatePlaylist(newVideos);
-      }
-      setTimeout(sheetSyncLoop, SHEET_CHECK_INTERVAL);
-    }
-    
-    // Main sync loop for app files
-    async function appSyncLoop() {
-      const changed = await checkAppChanges();
-      if (changed) {
-        msg('App updated! Reloading...');
-        setTimeout(() => {
-          // Clear service worker and reload
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-              regs.forEach(reg => reg.unregister());
-            }).finally(() => {
-              window.location.reload(true);
-            });
-          } else {
-            window.location.reload(true);
-          }
-        }, 1000);
-      }
-      setTimeout(appSyncLoop, APP_CHECK_INTERVAL);
-    }
-    
-    // ============ MAIN APP CODE ============
-    
+    // ===== STATE =====
     let player = null;
     let videos = [];
     let idx = 0;
@@ -682,7 +511,10 @@
     let hideT = null;
     let updT = null;
     let ready = false;
+    let lastDataHash = '';
+    let titleCache = {};
     
+    // ===== HELPERS =====
     const $ = id => document.getElementById(id);
     const loader = $('loader');
     const loaderText = $('loaderText');
@@ -705,6 +537,8 @@
     const drawerBg = $('drawerBg');
     const drawerList = $('drawerList');
     const toast = $('toast');
+    const status = $('status');
+    const refreshBtn = $('refreshBtn');
     
     function fmt(s) {
       if (!s || isNaN(s)) return '0:00';
@@ -713,18 +547,44 @@
       return m + ':' + (sec < 10 ? '0' : '') + sec;
     }
     
-    function msg(t) {
+    function msg(t, duration = 2000) {
       toast.textContent = t;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2000);
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+    
+    function showStatus(text, type = '') {
+      status.textContent = text;
+      status.className = 'status show ' + type;
+      setTimeout(() => status.classList.remove('show'), 2000);
     }
     
     function getVid(url) {
       if (!url) return null;
-      const m = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
-      return m ? m[1] : null;
+      url = url.trim();
+      // Handle various YouTube URL formats
+      let match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+      if (match) return match[1];
+      match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      if (match) return match[1];
+      match = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+      if (match) return match[1];
+      match = url.match(/^([a-zA-Z0-9_-]{11})$/);
+      if (match) return match[1];
+      return null;
     }
     
+    function hashCode(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString();
+    }
+    
+    // ===== UI VISIBILITY =====
     function showUI() {
       ui.classList.add('visible');
       clearTimeout(hideT);
@@ -754,6 +614,7 @@
       }
     }
     
+    // ===== PROGRESS =====
     function startUpd() {
       stopUpd();
       upd();
@@ -776,68 +637,238 @@
       } catch(e) {}
     }
     
-    async function loadData() {
+    // ===== FETCH SHEET DATA =====
+    async function fetchSheetData() {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
+      
+      console.log('[FETCH] Getting sheet data...');
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch: ' + response.status);
+      }
+      
+      const text = await response.text();
+      
+      // Parse Google's JSON response
+      const jsonStart = text.indexOf('({');
+      const jsonEnd = text.lastIndexOf('})');
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('Invalid response format');
+      }
+      
+      const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
+      const data = JSON.parse(jsonStr);
+      
+      const newVideos = [];
+      
+      if (data.table && data.table.rows) {
+        for (const row of data.table.rows) {
+          if (row.c) {
+            // Column A = title (optional), Column B = URL
+            const titleCell = row.c[0];
+            const urlCell = row.c[1];
+            
+            let url = '';
+            if (urlCell && urlCell.v) {
+              url = String(urlCell.v).trim();
+            }
+            
+            const videoId = getVid(url);
+            if (videoId) {
+              let title = '';
+              if (titleCell && titleCell.v) {
+                title = String(titleCell.v).trim();
+              }
+              
+              // Use cached title if available
+              if (!title && titleCache[videoId]) {
+                title = titleCache[videoId];
+              }
+              
+              newVideos.push({
+                id: videoId,
+                title: title || '', // Will fetch later
+                url: url
+              });
+            }
+          }
+        }
+      }
+      
+      console.log('[FETCH] Found', newVideos.length, 'videos');
+      return newVideos;
+    }
+    
+    // ===== FETCH YOUTUBE TITLES =====
+    async function fetchYouTubeTitle(videoId) {
+      // Check cache first
+      if (titleCache[videoId]) {
+        return titleCache[videoId];
+      }
+      
       try {
-        loaderText.textContent = 'Loading playlist...';
-        const txt = await fetchSheetData();
-        lastSheetData = hash(txt);
+        // Try noembed
+        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
+      } catch (e) {
+        console.log('[TITLE] noembed failed for', videoId);
+      }
+      
+      try {
+        // Try youtube-nocookie oembed
+        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
+      } catch (e) {
+        console.log('[TITLE] oembed failed for', videoId);
+      }
+      
+      return null;
+    }
+    
+    async function fetchAllTitles() {
+      console.log('[TITLES] Fetching titles for videos without them...');
+      
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
         
-        videos = parseSheetData(txt);
-        
-        if (!videos.length) {
-          showErr('No videos found');
-          return;
+        // Skip if already has a real title
+        if (video.title && !video.title.match(/^Video \d+$/)) {
+          continue;
         }
         
-        try {
-          const s = localStorage.getItem('vp_idx');
-          if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1);
-        } catch(e) {}
+        const title = await fetchYouTubeTitle(video.id);
+        if (title) {
+          videos[i].title = title;
+          
+          // Update UI if current video
+          if (i === idx) {
+            vTitle.textContent = title;
+          }
+          
+          // Update playlist item
+          const item = drawerList.querySelector(`[data-i="${i}"] .name`);
+          if (item) {
+            item.textContent = title;
+            item.classList.remove('loading');
+          }
+        } else {
+          // Set fallback title
+          videos[i].title = 'Video ' + (i + 1);
+        }
         
-        renderList();
-        loaderText.textContent = 'Loading player...';
-        loadAPI();
-        fetchTitles();
+        // Small delay between requests
+        await new Promise(r => setTimeout(r, 200));
+      }
+      
+      console.log('[TITLES] Done fetching titles');
+    }
+    
+    // ===== LOAD DATA =====
+    async function loadData(showLoader = true) {
+      try {
+        if (showLoader) {
+          loaderText.textContent = 'Loading playlist...';
+          loader.classList.remove('hide');
+        }
         
-        // Start sync loops
-        setTimeout(sheetSyncLoop, SHEET_CHECK_INTERVAL);
-        setTimeout(appSyncLoop, APP_CHECK_INTERVAL);
+        const newVideos = await fetchSheetData();
         
-        console.log('[APP] Loaded', videos.length, 'videos. Sync active.');
+        if (!newVideos.length) {
+          showErr('No videos found in sheet');
+          return false;
+        }
         
+        // Check if data changed
+        const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
+        const dataChanged = newHash !== lastDataHash;
+        lastDataHash = newHash;
+        
+        if (dataChanged || videos.length === 0) {
+          console.log('[DATA] Playlist updated!');
+          
+          // Preserve current video if possible
+          const currentId = videos[idx]?.id;
+          videos = newVideos;
+          
+          // Find current video in new list
+          if (currentId) {
+            const newIdx = videos.findIndex(v => v.id === currentId);
+            if (newIdx >= 0) {
+              idx = newIdx;
+            } else {
+              idx = Math.min(idx, videos.length - 1);
+            }
+          }
+          
+          // Load saved index on first load
+          if (showLoader) {
+            try {
+              const s = localStorage.getItem('vp_idx');
+              if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1);
+            } catch(e) {}
+          }
+          
+          // Set temporary titles for videos without them
+          videos.forEach((v, i) => {
+            if (!v.title) {
+              v.title = 'Loading...';
+            }
+          });
+          
+          renderList();
+          updTitle();
+          $('plCount').textContent = videos.length;
+          
+          // Fetch real titles
+          fetchAllTitles();
+          
+          if (!showLoader) {
+            msg('Playlist updated! (' + videos.length + ' videos)');
+          }
+          
+          return true;
+        }
+        
+        return false;
       } catch(e) {
-        console.error('[APP] Load error:', e);
-        showErr('Failed to load');
+        console.error('[DATA] Error:', e);
+        if (showLoader) {
+          showErr('Failed to load: ' + e.message);
+        } else {
+          showStatus('Sync failed', 'error');
+        }
+        return false;
       }
     }
     
     function showErr(m) {
-      loader.innerHTML = '<div class="err-box"><p>' + m + '</p><button onclick="location.reload()">Retry</button></div>';
+      loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`;
     }
     
     function renderList() {
-      drawerList.innerHTML = videos.map((v, i) => 
-        '<div class="pl-item' + (i === idx ? ' active' : '') + '" data-i="' + i + '"><span class="num">' + (i + 1) + '</span><span class="name">' + v.title + '</span></div>'
-      ).join('');
+      drawerList.innerHTML = videos.map((v, i) => {
+        const isLoading = v.title === 'Loading...' || !v.title;
+        return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}">
+          <span class="num">${i + 1}</span>
+          <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
+        </div>`;
+      }).join('');
     }
     
-    async function fetchTitles() {
-      for (let i = 0; i < videos.length; i++) {
-        if (videos[i].title.startsWith('Video ')) {
-          try {
-            const r = await fetch('https://noembed.com/embed?url=https://www.youtube.com/watch?v=' + videos[i].id);
-            const d = await r.json();
-            if (d.title) {
-              videos[i].title = d.title;
-              if (i === idx) vTitle.textContent = d.title;
-              const el = drawerList.querySelector('[data-i="' + i + '"] .name');
-              if (el) el.textContent = d.title;
-            }
-          } catch(e) {}
-        }
-      }
-    }
-    
+    // ===== PLAYER =====
     function loadAPI() {
       if (window.YT && window.YT.Player) {
         createPlayer();
@@ -920,7 +951,7 @@
     
     function onErr(e) {
       loader.classList.add('hide');
-      msg('Error - try next');
+      msg('Error loading video - try next');
     }
     
     function loadVid() {
@@ -936,7 +967,7 @@
     function updTitle() {
       const v = videos[idx];
       if (v) {
-        vTitle.textContent = v.title;
+        vTitle.textContent = v.title || 'Loading...';
         vCount.textContent = (idx + 1) + '/' + videos.length;
       }
     }
@@ -945,6 +976,7 @@
       try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {}
     }
     
+    // ===== CONTROLS =====
     function toggle() {
       if (!player || !ready) return;
       if (playing) player.pauseVideo();
@@ -1012,7 +1044,30 @@
       drawerBg.classList.remove('open');
     }
     
-    // Events
+    // ===== MANUAL REFRESH =====
+    async function manualRefresh() {
+      refreshBtn.classList.add('spinning');
+      msg('Refreshing playlist...');
+      
+      const changed = await loadData(false);
+      
+      refreshBtn.classList.remove('spinning');
+      
+      if (!changed) {
+        msg('Playlist is up to date');
+      }
+    }
+    
+    // ===== AUTO REFRESH =====
+    async function autoRefresh() {
+      try {
+        await loadData(false);
+      } catch (e) {
+        console.log('[AUTO] Refresh failed:', e);
+      }
+    }
+    
+    // ===== EVENTS =====
     $('playBtn').onclick = e => { e.stopPropagation(); toggle(); };
     bigPlay.onclick = e => { e.stopPropagation(); toggle(); };
     $('muteBtn').onclick = e => { e.stopPropagation(); toggleMute(); };
@@ -1023,6 +1078,7 @@
     $('nextBtn').onclick = e => { e.stopPropagation(); next(); };
     $('listBtn').onclick = e => { e.stopPropagation(); openDrawer(); };
     $('closeDrawer').onclick = e => { e.stopPropagation(); closeDrawer(); };
+    $('refreshBtn').onclick = e => { e.stopPropagation(); manualRefresh(); };
     drawerBg.onclick = closeDrawer;
     
     drawerList.onclick = e => {
@@ -1041,6 +1097,7 @@
       seekTo(p);
     };
     
+    // Touch handling
     let lastTap = 0;
     center.onclick = e => {
       if (e.target === bigPlay || e.target.closest('.play-big')) return;
@@ -1081,6 +1138,7 @@
     document.querySelector('.top').onclick = () => { showUI(); autoHide(); };
     document.querySelector('.bottom').onclick = () => { showUI(); autoHide(); };
     
+    // Keyboard
     document.onkeydown = e => {
       if (e.target.tagName === 'INPUT') return;
       switch(e.key) {
@@ -1091,32 +1149,25 @@
         case 'f': case 'F': toggleFS(); break;
         case 'n': case 'N': next(); break;
         case 'p': case 'P': prev(); break;
+        case 'r': case 'R': manualRefresh(); break;
       }
     };
     
-    // Check for updates on visibility change
-    document.addEventListener('visibilitychange', async () => {
+    // Check when tab becomes visible
+    document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        console.log('[SYNC] App visible, checking for updates...');
-        const newVideos = await checkSheetChanges();
-        if (newVideos) updatePlaylist(newVideos);
-        
-        const appChanged = await checkAppChanges();
-        if (appChanged) {
-          msg('App updated! Reloading...');
-          setTimeout(() => window.location.reload(true), 1000);
-        }
+        console.log('[VISIBILITY] Tab visible, refreshing...');
+        autoRefresh();
       }
     });
     
-    // Check for updates when coming online
-    window.addEventListener('online', async () => {
-      msg('Back online - syncing...');
-      const newVideos = await checkSheetChanges();
-      if (newVideos) updatePlaylist(newVideos);
+    // Check when online
+    window.addEventListener('online', () => {
+      msg('Back online!');
+      autoRefresh();
     });
     
-    // PWA Install
+    // ===== PWA INSTALL =====
     let deferredPrompt = null;
     const installBar = $('installBar');
     
@@ -1143,38 +1194,51 @@
     
     $('closeInstall').onclick = () => installBar.classList.add('hide');
     
-    // Register service worker but don't rely on it for caching
+    // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
-      // First, unregister any old service workers
-      navigator.serviceWorker.getRegistrations().then(regs => {
-        regs.forEach(reg => {
-          console.log('[SW] Unregistering old SW');
-          reg.unregister();
-        });
-      }).then(() => {
-        // Register new one
+      // Unregister old service workers first
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('[SW] Unregistered old service worker');
+        }
+      });
+      
+      // Register new one
+      setTimeout(() => {
         navigator.serviceWorker.register('sw.js?v=' + Date.now()).then(reg => {
           console.log('[SW] Registered');
         }).catch(err => {
           console.log('[SW] Registration failed:', err);
         });
-      });
+      }, 1000);
     }
     
-    // Clear all caches on load
+    // Clear caches
     if ('caches' in window) {
       caches.keys().then(keys => {
-        keys.forEach(key => {
-          console.log('[CACHE] Deleting:', key);
-          caches.delete(key);
-        });
+        keys.forEach(key => caches.delete(key));
       });
     }
     
-    // Start
-    loadData();
+    // ===== INIT =====
+    async function init() {
+      console.log('[INIT] Starting Video Player...');
+      
+      // Load initial data
+      await loadData(true);
+      
+      if (videos.length > 0) {
+        loaderText.textContent = 'Loading player...';
+        loadAPI();
+      }
+      
+      // Start auto-refresh
+      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      console.log('[INIT] Auto-refresh enabled every', AUTO_REFRESH_INTERVAL/1000, 'seconds');
+    }
     
-    console.log('[APP] Video Player with Auto-Sync initialized');
+    init();
   </script>
 </body>
 </html>
