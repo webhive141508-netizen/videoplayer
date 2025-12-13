@@ -100,9 +100,12 @@
     .nav-btn:active { background: rgba(255,255,255,0.3); }
     .nav-btn svg { width: 20px; height: 20px; fill: currentColor; }
     
+    /* Refresh button - green */
     .nav-btn.refresh-btn { background: rgba(34, 197, 94, 0.3); }
     .nav-btn.refresh-btn:active { background: rgba(34, 197, 94, 0.5); }
-    .nav-btn.refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+    .nav-btn.refresh-btn.spinning svg {
+      animation: spin 1s linear infinite;
+    }
     
     .info {
       flex: 1;
@@ -301,6 +304,10 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .pl-item .name.loading {
+      color: #666;
+      font-style: italic;
+    }
     
     .toast {
       position: fixed;
@@ -375,6 +382,23 @@
       cursor: pointer;
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
+    
+    /* Status indicator */
+    .status {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.8);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      color: #888;
+      z-index: 1000;
+      display: none;
+    }
+    .status.show { display: block; }
+    .status.success { background: rgba(34, 197, 94, 0.9); color: white; }
+    .status.error { background: rgba(239, 68, 68, 0.9); color: white; }
   </style>
 </head>
 <body>
@@ -459,6 +483,7 @@
   </div>
   
   <div class="toast" id="toast"></div>
+  <div class="status" id="status"></div>
   
   <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -472,7 +497,7 @@
   <script>
     // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-    const REFRESH_INTERVAL = 15000;
+    const AUTO_REFRESH_INTERVAL = 15000; // Check every 15 seconds
     
     // ===== STATE =====
     let player = null;
@@ -487,17 +512,7 @@
     let updT = null;
     let ready = false;
     let lastDataHash = '';
-    
-    // Title cache - persists in localStorage
     let titleCache = {};
-    try {
-      const saved = localStorage.getItem('vp_titles');
-      if (saved) titleCache = JSON.parse(saved);
-    } catch(e) {}
-    
-    function saveTitleCache() {
-      try { localStorage.setItem('vp_titles', JSON.stringify(titleCache)); } catch(e) {}
-    }
     
     // ===== HELPERS =====
     const $ = id => document.getElementById(id);
@@ -522,6 +537,7 @@
     const drawerBg = $('drawerBg');
     const drawerList = $('drawerList');
     const toast = $('toast');
+    const status = $('status');
     const refreshBtn = $('refreshBtn');
     
     function fmt(s) {
@@ -537,9 +553,16 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
     
+    function showStatus(text, type = '') {
+      status.textContent = text;
+      status.className = 'status show ' + type;
+      setTimeout(() => status.classList.remove('show'), 2000);
+    }
+    
     function getVid(url) {
       if (!url) return null;
       url = url.trim();
+      // Handle various YouTube URL formats
       let match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
       if (match) return match[1];
       match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -554,7 +577,8 @@
     function hashCode(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
         hash = hash & hash;
       }
       return hash.toString();
@@ -613,60 +637,39 @@
       } catch(e) {}
     }
     
-    // ===== GET TITLE FROM YOUTUBE PLAYER =====
-    function getTitleFromPlayer() {
-      if (!player || !ready) return null;
-      try {
-        const data = player.getVideoData();
-        if (data && data.title) {
-          return data.title;
-        }
-      } catch(e) {}
-      return null;
-    }
-    
-    // Update current video title from player
-    function updateCurrentTitle() {
-      const title = getTitleFromPlayer();
-      if (title && videos[idx]) {
-        const videoId = videos[idx].id;
-        
-        // Update video object
-        videos[idx].title = title;
-        
-        // Cache it
-        titleCache[videoId] = title;
-        saveTitleCache();
-        
-        // Update UI
-        vTitle.textContent = title;
-        
-        // Update playlist item
-        const item = drawerList.querySelector(`[data-i="${idx}"] .name`);
-        if (item) item.textContent = title;
-        
-        console.log('[TITLE] Got title from player:', title);
-      }
-    }
-    
     // ===== FETCH SHEET DATA =====
     async function fetchSheetData() {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
       
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch');
+      console.log('[FETCH] Getting sheet data...');
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch: ' + response.status);
+      }
       
       const text = await response.text();
+      
+      // Parse Google's JSON response
       const jsonStart = text.indexOf('({');
       const jsonEnd = text.lastIndexOf('})');
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response');
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('Invalid response format');
+      }
       
-      const data = JSON.parse(text.substring(jsonStart + 1, jsonEnd + 1));
+      const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
+      const data = JSON.parse(jsonStr);
+      
       const newVideos = [];
       
       if (data.table && data.table.rows) {
         for (const row of data.table.rows) {
           if (row.c) {
+            // Column A = title (optional), Column B = URL
             const titleCell = row.c[0];
             const urlCell = row.c[1];
             
@@ -677,25 +680,100 @@
             
             const videoId = getVid(url);
             if (videoId) {
-              // Priority: 1. Sheet title, 2. Cached title, 3. "Video X"
               let title = '';
               if (titleCell && titleCell.v) {
                 title = String(titleCell.v).trim();
               }
+              
+              // Use cached title if available
               if (!title && titleCache[videoId]) {
                 title = titleCache[videoId];
               }
-              if (!title) {
-                title = 'Video ' + (newVideos.length + 1);
-              }
               
-              newVideos.push({ id: videoId, title: title, url: url });
+              newVideos.push({
+                id: videoId,
+                title: title || '', // Will fetch later
+                url: url
+              });
             }
           }
         }
       }
       
+      console.log('[FETCH] Found', newVideos.length, 'videos');
       return newVideos;
+    }
+    
+    // ===== FETCH YOUTUBE TITLES =====
+    async function fetchYouTubeTitle(videoId) {
+      // Check cache first
+      if (titleCache[videoId]) {
+        return titleCache[videoId];
+      }
+      
+      try {
+        // Try noembed
+        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
+      } catch (e) {
+        console.log('[TITLE] noembed failed for', videoId);
+      }
+      
+      try {
+        // Try youtube-nocookie oembed
+        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
+      } catch (e) {
+        console.log('[TITLE] oembed failed for', videoId);
+      }
+      
+      return null;
+    }
+    
+    async function fetchAllTitles() {
+      console.log('[TITLES] Fetching titles for videos without them...');
+      
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        
+        // Skip if already has a real title
+        if (video.title && !video.title.match(/^Video \d+$/)) {
+          continue;
+        }
+        
+        const title = await fetchYouTubeTitle(video.id);
+        if (title) {
+          videos[i].title = title;
+          
+          // Update UI if current video
+          if (i === idx) {
+            vTitle.textContent = title;
+          }
+          
+          // Update playlist item
+          const item = drawerList.querySelector(`[data-i="${i}"] .name`);
+          if (item) {
+            item.textContent = title;
+            item.classList.remove('loading');
+          }
+        } else {
+          // Set fallback title
+          videos[i].title = 'Video ' + (i + 1);
+        }
+        
+        // Small delay between requests
+        await new Promise(r => setTimeout(r, 200));
+      }
+      
+      console.log('[TITLES] Done fetching titles');
     }
     
     // ===== LOAD DATA =====
@@ -713,6 +791,7 @@
           return false;
         }
         
+        // Check if data changed
         const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
         const dataChanged = newHash !== lastDataHash;
         lastDataHash = newHash;
@@ -720,15 +799,21 @@
         if (dataChanged || videos.length === 0) {
           console.log('[DATA] Playlist updated!');
           
+          // Preserve current video if possible
           const currentId = videos[idx]?.id;
           videos = newVideos;
           
+          // Find current video in new list
           if (currentId) {
             const newIdx = videos.findIndex(v => v.id === currentId);
-            if (newIdx >= 0) idx = newIdx;
-            else idx = Math.min(idx, videos.length - 1);
+            if (newIdx >= 0) {
+              idx = newIdx;
+            } else {
+              idx = Math.min(idx, videos.length - 1);
+            }
           }
           
+          // Load saved index on first load
           if (showLoader) {
             try {
               const s = localStorage.getItem('vp_idx');
@@ -736,9 +821,19 @@
             } catch(e) {}
           }
           
+          // Set temporary titles for videos without them
+          videos.forEach((v, i) => {
+            if (!v.title) {
+              v.title = 'Loading...';
+            }
+          });
+          
           renderList();
           updTitle();
           $('plCount').textContent = videos.length;
+          
+          // Fetch real titles
+          fetchAllTitles();
           
           if (!showLoader) {
             msg('Playlist updated! (' + videos.length + ' videos)');
@@ -752,6 +847,8 @@
         console.error('[DATA] Error:', e);
         if (showLoader) {
           showErr('Failed to load: ' + e.message);
+        } else {
+          showStatus('Sync failed', 'error');
         }
         return false;
       }
@@ -763,9 +860,10 @@
     
     function renderList() {
       drawerList.innerHTML = videos.map((v, i) => {
+        const isLoading = v.title === 'Loading...' || !v.title;
         return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}">
           <span class="num">${i + 1}</span>
-          <span class="name">${v.title}</span>
+          <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
         </div>`;
       }).join('');
     }
@@ -823,9 +921,6 @@
       autoHide();
       startUpd();
       player.playVideo();
-      
-      // Get title from player after a short delay
-      setTimeout(updateCurrentTitle, 1000);
     }
     
     function onState(e) {
@@ -834,9 +929,6 @@
         loader.classList.add('hide');
         setPlayState(true);
         startUpd();
-        
-        // Get title when video starts playing
-        setTimeout(updateCurrentTitle, 500);
       } else if (s === YT.PlayerState.PAUSED) {
         setPlayState(false);
         stopUpd();
@@ -854,8 +946,6 @@
         }
       } else if (s === YT.PlayerState.CUED) {
         loader.classList.add('hide');
-        // Get title when video is cued
-        setTimeout(updateCurrentTitle, 500);
       }
     }
     
@@ -872,15 +962,12 @@
       renderList();
       save();
       player.loadVideoById(videos[idx].id);
-      
-      // Get title after video loads
-      setTimeout(updateCurrentTitle, 1500);
     }
     
     function updTitle() {
       const v = videos[idx];
       if (v) {
-        vTitle.textContent = v.title;
+        vTitle.textContent = v.title || 'Loading...';
         vCount.textContent = (idx + 1) + '/' + videos.length;
       }
     }
@@ -960,7 +1047,7 @@
     // ===== MANUAL REFRESH =====
     async function manualRefresh() {
       refreshBtn.classList.add('spinning');
-      msg('Refreshing...');
+      msg('Refreshing playlist...');
       
       const changed = await loadData(false);
       
@@ -1066,12 +1153,15 @@
       }
     };
     
+    // Check when tab becomes visible
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        console.log('[VISIBILITY] Tab visible, refreshing...');
         autoRefresh();
       }
     });
     
+    // Check when online
     window.addEventListener('online', () => {
       msg('Back online!');
       autoRefresh();
@@ -1106,13 +1196,25 @@
     
     // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
+      // Unregister old service workers first
       navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let reg of registrations) {
-          reg.unregister();
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('[SW] Unregistered old service worker');
         }
       });
+      
+      // Register new one
+      setTimeout(() => {
+        navigator.serviceWorker.register('sw.js?v=' + Date.now()).then(reg => {
+          console.log('[SW] Registered');
+        }).catch(err => {
+          console.log('[SW] Registration failed:', err);
+        });
+      }, 1000);
     }
     
+    // Clear caches
     if ('caches' in window) {
       caches.keys().then(keys => {
         keys.forEach(key => caches.delete(key));
@@ -1123,6 +1225,7 @@
     async function init() {
       console.log('[INIT] Starting Video Player...');
       
+      // Load initial data
       await loadData(true);
       
       if (videos.length > 0) {
@@ -1130,7 +1233,9 @@
         loadAPI();
       }
       
-      setInterval(autoRefresh, REFRESH_INTERVAL);
+      // Start auto-refresh
+      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      console.log('[INIT] Auto-refresh enabled every', AUTO_REFRESH_INTERVAL/1000, 'seconds');
     }
     
     init();
