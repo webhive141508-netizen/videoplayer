@@ -196,20 +196,50 @@
     
     .prog-bar {
       flex: 1;
+      height: 24px;
+      background: transparent;
+      position: relative;
+      cursor: pointer;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+    }
+    .prog-track {
+      position: absolute;
+      left: 0;
+      right: 0;
       height: 4px;
       background: rgba(255,255,255,0.3);
       border-radius: 2px;
-      position: relative;
-      cursor: pointer;
     }
     .prog-fill {
       position: absolute;
       left: 0;
-      top: 0;
-      height: 100%;
+      height: 4px;
       background: #e11d48;
       border-radius: 2px;
       pointer-events: none;
+    }
+    .prog-thumb {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .prog-bar:hover .prog-thumb,
+    .prog-bar.dragging .prog-thumb,
+    .ui.visible .prog-thumb {
+      opacity: 1;
+    }
+    .prog-bar.dragging .prog-track,
+    .prog-bar.dragging .prog-fill {
+      height: 6px;
     }
     
     .ctrls {
@@ -442,7 +472,9 @@
         <div class="prog-wrap">
           <span class="time" id="curT">0:00</span>
           <div class="prog-bar" id="progBar">
+            <div class="prog-track"></div>
             <div class="prog-fill" id="progFill"></div>
+            <div class="prog-thumb" id="progThumb"></div>
           </div>
           <span class="time right" id="durT">0:00</span>
         </div>
@@ -513,6 +545,7 @@
     let ready = false;
     let lastDataHash = '';
     let titleCache = {};
+    let isSeeking = false;
     
     // ===== HELPERS =====
     const $ = id => document.getElementById(id);
@@ -525,6 +558,7 @@
     const durT = $('durT');
     const progBar = $('progBar');
     const progFill = $('progFill');
+    const progThumb = $('progThumb');
     const icPlay = $('icPlay');
     const icPause = $('icPause');
     const icVol = $('icVol');
@@ -591,12 +625,12 @@
     }
     
     function hideUI() {
-      if (playing) ui.classList.remove('visible');
+      if (playing && !isSeeking) ui.classList.remove('visible');
     }
     
     function autoHide() {
       clearTimeout(hideT);
-      if (playing) hideT = setTimeout(hideUI, 3000);
+      if (playing && !isSeeking) hideT = setTimeout(hideUI, 3000);
     }
     
     function setPlayState(isPlay) {
@@ -626,12 +660,13 @@
     }
     
     function upd() {
-      if (!player || !ready) return;
+      if (!player || !ready || isSeeking) return;
       try {
         const c = player.getCurrentTime() || 0;
         dur = player.getDuration() || dur;
         const p = dur > 0 ? (c / dur) * 100 : 0;
         progFill.style.width = p + '%';
+        progThumb.style.left = p + '%';
         curT.textContent = fmt(c);
         durT.textContent = fmt(dur);
       } catch(e) {}
@@ -901,6 +936,8 @@
           modestbranding: 1,
           playsinline: 1,
           rel: 0,
+          showinfo: 0,
+          cc_load_policy: 0,
           origin: location.origin
         },
         events: {
@@ -961,7 +998,10 @@
       updTitle();
       renderList();
       save();
-      player.loadVideoById(videos[idx].id);
+      player.loadVideoById({
+        videoId: videos[idx].id,
+        suggestedQuality: 'default'
+      });
     }
     
     function updTitle() {
@@ -1067,6 +1107,85 @@
       }
     }
     
+    // ===== PROGRESS BAR DRAG/TOUCH HANDLING =====
+    function getSeekPosition(e) {
+      const rect = progBar.getBoundingClientRect();
+      let clientX;
+      
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+      } else {
+        clientX = e.clientX;
+      }
+      
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return pct;
+    }
+    
+    function updateSeekPreview(pct) {
+      progFill.style.width = (pct * 100) + '%';
+      progThumb.style.left = (pct * 100) + '%';
+      curT.textContent = fmt(dur * pct);
+    }
+    
+    function startSeek(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      isSeeking = true;
+      progBar.classList.add('dragging');
+      showUI();
+      
+      const pct = getSeekPosition(e);
+      updateSeekPreview(pct);
+      
+      // Add move and end listeners
+      document.addEventListener('mousemove', moveSeek);
+      document.addEventListener('mouseup', endSeek);
+      document.addEventListener('touchmove', moveSeek, { passive: false });
+      document.addEventListener('touchend', endSeek);
+      document.addEventListener('touchcancel', endSeek);
+    }
+    
+    function moveSeek(e) {
+      if (!isSeeking) return;
+      e.preventDefault();
+      
+      const pct = getSeekPosition(e);
+      updateSeekPreview(pct);
+    }
+    
+    function endSeek(e) {
+      if (!isSeeking) return;
+      
+      const pct = getSeekPosition(e);
+      seekTo(pct);
+      
+      isSeeking = false;
+      progBar.classList.remove('dragging');
+      autoHide();
+      
+      // Remove listeners
+      document.removeEventListener('mousemove', moveSeek);
+      document.removeEventListener('mouseup', endSeek);
+      document.removeEventListener('touchmove', moveSeek);
+      document.removeEventListener('touchend', endSeek);
+      document.removeEventListener('touchcancel', endSeek);
+    }
+    
+    // Progress bar event listeners
+    progBar.addEventListener('mousedown', startSeek);
+    progBar.addEventListener('touchstart', startSeek, { passive: false });
+    
+    // Simple click on progress bar
+    progBar.addEventListener('click', e => {
+      if (isSeeking) return;
+      e.stopPropagation();
+      const pct = getSeekPosition(e);
+      seekTo(pct);
+    });
+    
     // ===== EVENTS =====
     $('playBtn').onclick = e => { e.stopPropagation(); toggle(); };
     bigPlay.onclick = e => { e.stopPropagation(); toggle(); };
@@ -1088,13 +1207,6 @@
         loadVid();
         closeDrawer();
       }
-    };
-    
-    progBar.onclick = e => {
-      e.stopPropagation();
-      const r = progBar.getBoundingClientRect();
-      const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-      seekTo(p);
     };
     
     // Touch handling
@@ -1136,7 +1248,11 @@
     };
     
     document.querySelector('.top').onclick = () => { showUI(); autoHide(); };
-    document.querySelector('.bottom').onclick = () => { showUI(); autoHide(); };
+    document.querySelector('.bottom').onclick = e => {
+      if (e.target.closest('.prog-bar')) return;
+      showUI();
+      autoHide();
+    };
     
     // Keyboard
     document.onkeydown = e => {
