@@ -729,26 +729,15 @@
   </div>
 
   <script>
-    // ===== CONFIGURATION =====
-    const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-    const AUTO_REFRESH_INTERVAL = 15000; // Check every 15 seconds
-    
-    // ===== YouTube API Key (Obfuscated) =====
-    // IMPORTANT: Replace this with your own YouTube Data API v3 key
-    // To set your API key, encode it using: btoa('YOUR_API_KEY')
-    // Then replace the string below with your encoded key
-    // Example: If your key is "ABC123", run btoa('ABC123') in console and use that result
-    const _k = [
-      'AIzaSyCK', // Part 1
-      'w3OZQ', // Part 2 - REPLACE THESE PARTS WITH YOUR OWN ENCODED KEY
-      '-hKWgh7hXds4', // Part 3 - This is a placeholder
-      'M53ToleyX6g9CE', // Part 4 - You need to add your real key
-    ];
+      // ===== CONFIGURATION =====
+  const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
+  const AUTO_REFRESH_INTERVAL = 15000;
 
-  console.log(atob(_k.join('')));
+  // ===== YouTube API Key (PLAIN TEXT) =====
+  const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
 
-
-  console.log('Decoded API Key:', getApiKey());
+  // Example usage
+  console.log("API Key:", YOUTUBE_API_KEY);
     
     // ===== STATE =====
     let player = null;
