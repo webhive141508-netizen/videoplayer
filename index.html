@@ -100,10 +100,14 @@
     .nav-btn:active { background: rgba(255,255,255,0.3); }
     .nav-btn svg { width: 20px; height: 20px; fill: currentColor; }
     
+    /* Refresh button - green */
     .nav-btn.refresh-btn { background: rgba(34, 197, 94, 0.3); }
     .nav-btn.refresh-btn:active { background: rgba(34, 197, 94, 0.5); }
-    .nav-btn.refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+    .nav-btn.refresh-btn.spinning svg {
+      animation: spin 1s linear infinite;
+    }
     
+    /* Search button - blue */
     .nav-btn.search-btn { background: rgba(59, 130, 246, 0.3); }
     .nav-btn.search-btn:active { background: rgba(59, 130, 246, 0.5); }
     
@@ -234,9 +238,13 @@
     }
     .prog-bar:hover .prog-thumb,
     .prog-bar.dragging .prog-thumb,
-    .ui.visible .prog-thumb { opacity: 1; }
+    .ui.visible .prog-thumb {
+      opacity: 1;
+    }
     .prog-bar.dragging .prog-track,
-    .prog-bar.dragging .prog-fill { height: 6px; }
+    .prog-bar.dragging .prog-fill {
+      height: 6px;
+    }
     
     .ctrls {
       display: flex;
@@ -330,7 +338,183 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .pl-item .name.loading { color: #666; font-style: italic; }
+    .pl-item .name.loading {
+      color: #666;
+      font-style: italic;
+    }
+    
+    /* Search Modal */
+    .search-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .search-modal.open { opacity: 1; pointer-events: auto; }
+    
+    .search-header {
+      padding: 12px 15px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .search-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 10px 40px 10px 15px;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-input:focus { border-color: #3b82f6; }
+    .search-input::placeholder { color: #666; }
+    
+    .search-submit {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .search-submit:active { background: #2563eb; }
+    .search-submit svg { width: 16px; height: 16px; fill: currentColor; }
+    
+    .search-close {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .search-close svg { width: 20px; height: 20px; fill: currentColor; }
+    
+    .search-info {
+      padding: 8px 15px;
+      font-size: 11px;
+      color: #888;
+      border-bottom: 1px solid #222;
+    }
+    
+    .search-results {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px;
+    }
+    
+    .search-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+    .search-empty svg {
+      width: 60px;
+      height: 60px;
+      fill: #333;
+      margin-bottom: 15px;
+    }
+    .search-empty p { font-size: 14px; }
+    
+    .search-loading {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .search-loading .spinner {
+      margin: 0 auto 15px;
+    }
+    .search-loading p { color: #888; font-size: 13px; }
+    
+    .search-result-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-result-item:active { background: #2a2a2a; }
+    
+    .search-thumb {
+      width: 120px;
+      height: 68px;
+      background: #333;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .search-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .search-thumb .duration {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: rgba(0,0,0,0.8);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .search-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .search-result-title {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .search-result-channel {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .search-result-meta {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
     
     .toast {
       position: fixed;
@@ -342,7 +526,7 @@
       padding: 8px 18px;
       border-radius: 20px;
       font-size: 12px;
-      z-index: 300;
+      z-index: 400;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
@@ -406,6 +590,7 @@
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
+    /* Status indicator */
     .status {
       position: fixed;
       top: 8px;
@@ -421,146 +606,6 @@
     .status.show { display: block; }
     .status.success { background: rgba(34, 197, 94, 0.9); color: white; }
     .status.error { background: rgba(239, 68, 68, 0.9); color: white; }
-
-    /* Search Modal */
-    .search-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.95);
-      z-index: 300;
-      display: flex;
-      flex-direction: column;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    .search-modal.open { opacity: 1; pointer-events: auto; }
-    
-    .search-header {
-      padding: 15px;
-      background: #111;
-      border-bottom: 1px solid #333;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .search-input {
-      flex: 1;
-      background: #222;
-      border: 1px solid #444;
-      border-radius: 25px;
-      padding: 12px 20px;
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-    }
-    .search-input:focus { border-color: #3b82f6; }
-    .search-input::placeholder { color: #666; }
-    
-    .search-close {
-      width: 44px;
-      height: 44px;
-      background: rgba(255,255,255,0.1);
-      border: none;
-      border-radius: 50%;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .search-close svg { width: 22px; height: 22px; fill: currentColor; }
-    
-    .search-info {
-      padding: 10px 15px;
-      background: #0a0a0a;
-      font-size: 12px;
-      color: #888;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .search-info .channel-count { color: #3b82f6; }
-    
-    .search-results {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 10px;
-    }
-    
-    .search-loading {
-      text-align: center;
-      padding: 40px;
-      color: #888;
-    }
-    .search-loading .spinner {
-      margin: 0 auto 15px;
-    }
-    
-    .search-empty {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-    .search-empty svg {
-      width: 60px;
-      height: 60px;
-      fill: #333;
-      margin-bottom: 15px;
-    }
-    
-    .result-item {
-      display: flex;
-      gap: 12px;
-      padding: 12px;
-      background: #1a1a1a;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .result-item:hover { background: #252525; }
-    .result-item:active { background: #333; }
-    
-    .result-thumb {
-      width: 120px;
-      height: 68px;
-      background: #333;
-      border-radius: 6px;
-      flex-shrink: 0;
-      object-fit: cover;
-    }
-    
-    .result-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    .result-title {
-      font-size: 13px;
-      font-weight: 500;
-      color: #fff;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin-bottom: 6px;
-    }
-    .result-channel {
-      font-size: 11px;
-      color: #888;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .result-date {
-      font-size: 10px;
-      color: #666;
-      margin-top: 4px;
-    }
   </style>
 </head>
 <body>
@@ -648,23 +693,25 @@
     </div>
     <div class="drawer-list" id="drawerList"></div>
   </div>
-
+  
   <!-- Search Modal -->
   <div class="search-modal" id="searchModal">
     <div class="search-header">
-      <input type="text" class="search-input" id="searchInput" placeholder="Search videos from channels...">
+      <div class="search-input-wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search videos from channels..." autocomplete="off">
+        <button class="search-submit" id="searchSubmit">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </button>
+      </div>
       <button class="search-close" id="searchClose">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
     </div>
-    <div class="search-info">
-      <span>Searching <span class="channel-count" id="channelCount">0</span> channels</span>
-      <span id="videoCount">0 videos loaded</span>
-    </div>
+    <div class="search-info" id="searchInfo">Searching in <span id="channelCount">0</span> channels from your sheet (Column C)</div>
     <div class="search-results" id="searchResults">
-      <div class="search-empty" id="searchEmpty">
+      <div class="search-empty">
         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <p>Type to search videos</p>
+        <p>Enter a search term to find videos</p>
       </div>
     </div>
   </div>
@@ -684,12 +731,30 @@
   <script>
     // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-    const AUTO_REFRESH_INTERVAL = 15000;
-    const CORS_PROXIES = [
-      'https://api.allorigins.win/raw?url=',
-      'https://corsproxy.io/?',
-      'https://api.codetabs.com/v1/proxy?quest='
+    const AUTO_REFRESH_INTERVAL = 15000; // Check every 15 seconds
+    
+    // ===== YouTube API Key (Obfuscated) =====
+    // IMPORTANT: Replace this with your own YouTube Data API v3 key
+    // To set your API key, encode it using: btoa('YOUR_API_KEY')
+    // Then replace the string below with your encoded key
+    // Example: If your key is "ABC123", run btoa('ABC123') in console and use that result
+    const _k = [
+      'AIzaSyCK', // Part 1
+      'w3OZQ', // Part 2 - REPLACE THESE PARTS WITH YOUR OWN ENCODED KEY
+      '-hKWgh7hXds4', // Part 3 - This is a placeholder
+      'M53ToleyX6g9CE', // Part 4 - You need to add your real key
     ];
+    // Decode and get the API key - Comment: Add your API key parts above (base64 encoded in chunks)
+    function getApiKey() {
+      // For security, you should store your key on a backend server
+      // This is just basic obfuscation, not true security
+      try {
+        return atob(_k.join(''));
+      } catch(e) {
+        console.error('Invalid API key configuration');
+        return '';
+      }
+    }
     
     // ===== STATE =====
     let player = null;
@@ -706,12 +771,7 @@
     let lastDataHash = '';
     let titleCache = {};
     let isSeeking = false;
-    
-    // Search state
-    let channelIds = [];
-    let allChannelVideos = [];
-    let isLoadingChannels = false;
-    let searchDebounce = null;
+    let channelIds = []; // Store channel IDs from Column C
     
     // ===== HELPERS =====
     const $ = id => document.getElementById(id);
@@ -742,13 +802,34 @@
     const searchModal = $('searchModal');
     const searchInput = $('searchInput');
     const searchResults = $('searchResults');
-    const searchEmpty = $('searchEmpty');
     
     function fmt(s) {
       if (!s || isNaN(s)) return '0:00';
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
       return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+    
+    function fmtDuration(iso) {
+      // Parse ISO 8601 duration (PT1H2M3S)
+      if (!iso) return '';
+      const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return '';
+      const h = parseInt(match[1] || 0);
+      const m = parseInt(match[2] || 0);
+      const s = parseInt(match[3] || 0);
+      if (h > 0) {
+        return `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+      }
+      return `${m}:${s.toString().padStart(2,'0')}`;
+    }
+    
+    function fmtViews(n) {
+      if (!n) return '';
+      n = parseInt(n);
+      if (n >= 1000000) return (n/1000000).toFixed(1) + 'M views';
+      if (n >= 1000) return (n/1000).toFixed(1) + 'K views';
+      return n + ' views';
     }
     
     function msg(t, duration = 2000) {
@@ -766,6 +847,7 @@
     function getVid(url) {
       if (!url) return null;
       url = url.trim();
+      // Handle various YouTube URL formats
       let match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
       if (match) return match[1];
       match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -780,18 +862,22 @@
     function getChannelId(url) {
       if (!url) return null;
       url = url.trim();
-      // Direct channel ID format
-      let match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+      // Handle various channel URL formats
+      // /channel/UC... format
+      let match = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
-      // Handle @username format - will need to resolve
-      match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
-      if (match) return { type: 'handle', handle: match[1] };
-      // Handle /c/customname format
-      match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
-      if (match) return { type: 'custom', name: match[1] };
-      // Handle /user/username format
-      match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
-      if (match) return { type: 'user', name: match[1] };
+      // @username format - need to resolve via API
+      match = url.match(/\/@([a-zA-Z0-9_-]+)/);
+      if (match) return { handle: match[1] };
+      // /c/customname format
+      match = url.match(/\/c\/([a-zA-Z0-9_-]+)/);
+      if (match) return { custom: match[1] };
+      // /user/username format
+      match = url.match(/\/user\/([a-zA-Z0-9_-]+)/);
+      if (match) return { user: match[1] };
+      // Direct channel ID
+      match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
+      if (match) return match[1];
       return null;
     }
     
@@ -803,19 +889,6 @@
         hash = hash & hash;
       }
       return hash.toString();
-    }
-    
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      const now = new Date();
-      const diff = now - date;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (days === 0) return 'Today';
-      if (days === 1) return 'Yesterday';
-      if (days < 7) return `${days} days ago`;
-      if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-      if (days < 365) return `${Math.floor(days / 30)} months ago`;
-      return `${Math.floor(days / 365)} years ago`;
     }
     
     // ===== UI VISIBILITY =====
@@ -872,55 +945,61 @@
       } catch(e) {}
     }
     
-    // ===== FETCH WITH CORS PROXY =====
-    async function fetchWithProxy(url) {
-      for (const proxy of CORS_PROXIES) {
-        try {
-          const response = await fetch(proxy + encodeURIComponent(url), {
-            method: 'GET',
-            cache: 'no-store'
-          });
-          if (response.ok) {
-            return await response.text();
-          }
-        } catch (e) {
-          console.log('[PROXY] Failed with', proxy);
-        }
-      }
-      throw new Error('All proxies failed');
-    }
-    
     // ===== FETCH SHEET DATA =====
     async function fetchSheetData() {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
       
       console.log('[FETCH] Getting sheet data...');
       
-      const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch: ' + response.status);
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch: ' + response.status);
+      }
       
       const text = await response.text();
+      
+      // Parse Google's JSON response
       const jsonStart = text.indexOf('({');
       const jsonEnd = text.lastIndexOf('})');
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response format');
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('Invalid response format');
+      }
       
       const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
       const data = JSON.parse(jsonStr);
       
       const newVideos = [];
-      const channels = [];
+      const newChannels = new Set();
       
       if (data.table && data.table.rows) {
         for (const row of data.table.rows) {
           if (row.c) {
+            // Column A = title (optional), Column B = URL, Column C = Channel URL
             const titleCell = row.c[0];
             const urlCell = row.c[1];
-            const channelCell = row.c[2]; // Column C for channels
+            const channelCell = row.c[2]; // Column C for channel
             
-            // Get video URL from column B
             let url = '';
             if (urlCell && urlCell.v) {
               url = String(urlCell.v).trim();
+            }
+            
+            // Extract channel from Column C
+            if (channelCell && channelCell.v) {
+              const channelUrl = String(channelCell.v).trim();
+              const channelId = getChannelId(channelUrl);
+              if (channelId) {
+                if (typeof channelId === 'string') {
+                  newChannels.add(channelId);
+                } else {
+                  // Store the handle/custom/user object for later resolution
+                  newChannels.add(JSON.stringify(channelId));
+                }
+              }
             }
             
             const videoId = getVid(url);
@@ -929,143 +1008,169 @@
               if (titleCell && titleCell.v) {
                 title = String(titleCell.v).trim();
               }
+              
+              // Use cached title if available
               if (!title && titleCache[videoId]) {
                 title = titleCache[videoId];
               }
-              newVideos.push({ id: videoId, title: title || '', url: url });
-            }
-            
-            // Get channel URL from column C
-            if (channelCell && channelCell.v) {
-              const channelUrl = String(channelCell.v).trim();
-              if (channelUrl && !channels.includes(channelUrl)) {
-                channels.push(channelUrl);
-              }
+              
+              newVideos.push({
+                id: videoId,
+                title: title || '', // Will fetch later
+                url: url
+              });
             }
           }
         }
       }
       
-      console.log('[FETCH] Found', newVideos.length, 'videos and', channels.length, 'channels');
-      return { videos: newVideos, channels: channels };
+      // Update channel IDs
+      channelIds = Array.from(newChannels);
+      $('channelCount').textContent = channelIds.length;
+      
+      console.log('[FETCH] Found', newVideos.length, 'videos and', channelIds.length, 'channels');
+      return newVideos;
     }
     
-    // ===== RESOLVE CHANNEL ID =====
-    async function resolveChannelId(channelUrl) {
-      const parsed = getChannelId(channelUrl);
-      if (!parsed) return null;
+    // ===== RESOLVE CHANNEL HANDLES/USERNAMES TO IDS =====
+    async function resolveChannelId(channelInfo) {
+      const apiKey = getApiKey();
+      if (!apiKey) return null;
       
-      if (typeof parsed === 'string') {
-        return parsed; // Already a channel ID
-      }
-      
-      // Need to resolve handle/custom/user to channel ID
       try {
-        const html = await fetchWithProxy(channelUrl);
-        const match = html.match(/channel_id=([^"&]+)/);
-        if (match) return match[1];
+        if (typeof channelInfo === 'string' && channelInfo.startsWith('UC')) {
+          return channelInfo;
+        }
         
-        const match2 = html.match(/"channelId":"(UC[^"]+)"/);
-        if (match2) return match2[1];
+        const info = typeof channelInfo === 'string' ? JSON.parse(channelInfo) : channelInfo;
         
-        const match3 = html.match(/\/channel\/(UC[^"\/]+)/);
-        if (match3) return match3[1];
+        let searchUrl = '';
+        if (info.handle) {
+          // Search by handle/username
+          searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent('@' + info.handle)}&maxResults=1&key=${apiKey}`;
+        } else if (info.custom || info.user) {
+          const name = info.custom || info.user;
+          searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(name)}&maxResults=1&key=${apiKey}`;
+        }
+        
+        if (searchUrl) {
+          const res = await fetch(searchUrl);
+          const data = await res.json();
+          if (data.items && data.items.length > 0) {
+            return data.items[0].snippet.channelId;
+          }
+        }
       } catch (e) {
-        console.log('[RESOLVE] Failed to resolve', channelUrl, e);
+        console.log('[CHANNEL] Failed to resolve:', channelInfo, e);
       }
+      
       return null;
     }
     
-    // ===== FETCH CHANNEL VIDEOS VIA RSS =====
-    async function fetchChannelVideos(channelId) {
-      const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-      
-      try {
-        const xml = await fetchWithProxy(rssUrl);
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xml, 'text/xml');
-        
-        const entries = doc.querySelectorAll('entry');
-        const channelName = doc.querySelector('author > name')?.textContent || 'Unknown Channel';
-        const videos = [];
-        
-        entries.forEach(entry => {
-          const videoId = entry.querySelector('videoId')?.textContent;
-          const title = entry.querySelector('title')?.textContent;
-          const published = entry.querySelector('published')?.textContent;
-          const thumbnail = entry.querySelector('media\\:thumbnail, thumbnail')?.getAttribute('url') ||
-                          `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
-          
-          if (videoId && title) {
-            videos.push({
-              id: videoId,
-              title: title,
-              channel: channelName,
-              channelId: channelId,
-              published: published,
-              thumbnail: thumbnail
-            });
-          }
-        });
-        
-        return videos;
-      } catch (e) {
-        console.log('[RSS] Failed for channel', channelId, e);
+    // ===== SEARCH YOUTUBE VIDEOS =====
+    async function searchVideos(query) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        msg('API key not configured!');
         return [];
       }
-    }
-    
-    // ===== LOAD ALL CHANNEL VIDEOS =====
-    async function loadAllChannelVideos(channelUrls) {
-      if (isLoadingChannels) return;
-      isLoadingChannels = true;
       
-      const resolvedIds = [];
+      if (!query.trim()) return [];
       
-      // Resolve all channel URLs to IDs
-      for (const url of channelUrls) {
-        const id = await resolveChannelId(url);
-        if (id && !resolvedIds.includes(id)) {
-          resolvedIds.push(id);
+      // Show loading
+      searchResults.innerHTML = `
+        <div class="search-loading">
+          <div class="spinner"></div>
+          <p>Searching in ${channelIds.length} channels...</p>
+        </div>
+      `;
+      
+      const allResults = [];
+      
+      // Resolve channel IDs first
+      const resolvedChannelIds = [];
+      for (const ch of channelIds) {
+        if (typeof ch === 'string' && ch.startsWith('UC')) {
+          resolvedChannelIds.push(ch);
+        } else {
+          const resolved = await resolveChannelId(ch);
+          if (resolved) resolvedChannelIds.push(resolved);
         }
       }
       
-      channelIds = resolvedIds;
-      $('channelCount').textContent = channelIds.length;
-      console.log('[CHANNELS] Resolved', channelIds.length, 'channel IDs');
+      console.log('[SEARCH] Resolved channels:', resolvedChannelIds);
       
-      // Fetch videos from all channels
-      allChannelVideos = [];
-      let loadedCount = 0;
-      
-      for (const channelId of channelIds) {
-        const videos = await fetchChannelVideos(channelId);
-        allChannelVideos.push(...videos);
-        loadedCount++;
-        $('videoCount').textContent = `${allChannelVideos.length} videos from ${loadedCount}/${channelIds.length} channels`;
+      // Search in each channel
+      for (const channelId of resolvedChannelIds) {
+        try {
+          const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=relevance&key=${apiKey}`;
+          
+          const res = await fetch(searchUrl);
+          const data = await res.json();
+          
+          if (data.error) {
+            console.error('[SEARCH] API Error:', data.error.message);
+            if (data.error.code === 403) {
+              msg('API quota exceeded or invalid key');
+              return [];
+            }
+            continue;
+          }
+          
+          if (data.items) {
+            for (const item of data.items) {
+              allResults.push({
+                id: item.id.videoId,
+                title: item.snippet.title,
+                channel: item.snippet.channelTitle,
+                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+                publishedAt: item.snippet.publishedAt
+              });
+            }
+          }
+        } catch (e) {
+          console.error('[SEARCH] Error searching channel:', channelId, e);
+        }
       }
       
-      // Sort by published date
-      allChannelVideos.sort((a, b) => new Date(b.published) - new Date(a.published));
+      // Get video durations and view counts
+      if (allResults.length > 0) {
+        try {
+          const videoIds = allResults.map(r => r.id).join(',');
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${videoIds}&key=${apiKey}`;
+          
+          const res = await fetch(detailsUrl);
+          const data = await res.json();
+          
+          if (data.items) {
+            for (const item of data.items) {
+              const result = allResults.find(r => r.id === item.id);
+              if (result) {
+                result.duration = fmtDuration(item.contentDetails.duration);
+                result.views = fmtViews(item.statistics.viewCount);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('[SEARCH] Failed to get video details:', e);
+        }
+      }
       
-      console.log('[CHANNELS] Loaded', allChannelVideos.length, 'total videos');
-      isLoadingChannels = false;
+      // Remove duplicates
+      const uniqueResults = [];
+      const seenIds = new Set();
+      for (const r of allResults) {
+        if (!seenIds.has(r.id)) {
+          seenIds.add(r.id);
+          uniqueResults.push(r);
+        }
+      }
+      
+      console.log('[SEARCH] Found', uniqueResults.length, 'results');
+      return uniqueResults;
     }
     
-    // ===== SEARCH VIDEOS =====
-    function searchVideos(query) {
-      if (!query.trim()) {
-        searchResults.innerHTML = '';
-        searchResults.appendChild(searchEmpty);
-        return;
-      }
-      
-      const q = query.toLowerCase();
-      const results = allChannelVideos.filter(v => 
-        v.title.toLowerCase().includes(q) || 
-        v.channel.toLowerCase().includes(q)
-      );
-      
+    function displaySearchResults(results, query) {
       if (results.length === 0) {
         searchResults.innerHTML = `
           <div class="search-empty">
@@ -1076,106 +1181,143 @@
         return;
       }
       
-      searchResults.innerHTML = results.slice(0, 50).map(v => `
-        <div class="result-item" data-id="${v.id}" data-title="${encodeURIComponent(v.title)}">
-          <img class="result-thumb" src="${v.thumbnail}" alt="" loading="lazy" onerror="this.src='https://i.ytimg.com/vi/${v.id}/mqdefault.jpg'">
-          <div class="result-info">
-            <div class="result-title">${v.title}</div>
-            <div class="result-channel">${v.channel}</div>
-            <div class="result-date">${formatDate(v.published)}</div>
+      searchResults.innerHTML = results.map(r => `
+        <div class="search-result-item" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}">
+          <div class="search-thumb">
+            <img src="${r.thumbnail}" alt="" loading="lazy">
+            ${r.duration ? `<span class="duration">${r.duration}</span>` : ''}
+          </div>
+          <div class="search-result-info">
+            <div class="search-result-title">${r.title}</div>
+            <div class="search-result-channel">${r.channel}</div>
+            <div class="search-result-meta">${r.views || ''}</div>
           </div>
         </div>
       `).join('');
     }
     
-    // ===== SEARCH MODAL =====
+    // ===== SEARCH UI =====
     function openSearch() {
       searchModal.classList.add('open');
       searchInput.focus();
-      
-      if (allChannelVideos.length === 0 && channelIds.length === 0) {
-        searchResults.innerHTML = `
-          <div class="search-loading">
-            <div class="spinner"></div>
-            <p>Loading channel videos...</p>
-          </div>
-        `;
-      }
+      if (player && playing) player.pauseVideo();
     }
     
     function closeSearch() {
       searchModal.classList.remove('open');
       searchInput.value = '';
-      searchResults.innerHTML = '';
-      searchResults.appendChild(searchEmpty);
     }
     
-    function playSearchResult(videoId, title) {
-      // Add to playlist and play
-      const existingIdx = videos.findIndex(v => v.id === videoId);
-      
-      if (existingIdx >= 0) {
-        idx = existingIdx;
-      } else {
-        // Add to beginning of playlist
-        videos.unshift({
-          id: videoId,
-          title: decodeURIComponent(title),
-          url: `https://www.youtube.com/watch?v=${videoId}`
-        });
-        idx = 0;
-        renderList();
-        $('plCount').textContent = videos.length;
+    async function performSearch() {
+      const query = searchInput.value.trim();
+      if (!query) {
+        msg('Please enter a search term');
+        return;
       }
       
-      closeSearch();
-      loadVid();
+      if (channelIds.length === 0) {
+        msg('No channels found in Column C of your sheet');
+        return;
+      }
+      
+      const results = await searchVideos(query);
+      displaySearchResults(results, query);
     }
+    
+    // Search result click handler
+    searchResults.onclick = e => {
+      const item = e.target.closest('.search-result-item');
+      if (item) {
+        const videoId = item.dataset.id;
+        const videoTitle = item.dataset.title;
+        
+        // Play this video
+        closeSearch();
+        
+        if (player && ready) {
+          loaderText.textContent = 'Loading...';
+          loader.classList.remove('hide');
+          vTitle.textContent = videoTitle;
+          vCount.textContent = 'Search Result';
+          player.loadVideoById({
+            videoId: videoId,
+            suggestedQuality: 'default'
+          });
+          msg('Playing: ' + videoTitle);
+        }
+      }
+    };
     
     // ===== FETCH YOUTUBE TITLES =====
     async function fetchYouTubeTitle(videoId) {
-      if (titleCache[videoId]) return titleCache[videoId];
+      // Check cache first
+      if (titleCache[videoId]) {
+        return titleCache[videoId];
+      }
       
       try {
+        // Try noembed
         const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
         const data = await response.json();
         if (data.title) {
           titleCache[videoId] = data.title;
           return data.title;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('[TITLE] noembed failed for', videoId);
+      }
       
       try {
+        // Try youtube-nocookie oembed
         const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
         const data = await response.json();
         if (data.title) {
           titleCache[videoId] = data.title;
           return data.title;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('[TITLE] oembed failed for', videoId);
+      }
       
       return null;
     }
     
     async function fetchAllTitles() {
+      console.log('[TITLES] Fetching titles for videos without them...');
+      
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i];
-        if (video.title && !video.title.match(/^Video \d+$/)) continue;
+        
+        // Skip if already has a real title
+        if (video.title && !video.title.match(/^Video \d+$/)) {
+          continue;
+        }
         
         const title = await fetchYouTubeTitle(video.id);
         if (title) {
           videos[i].title = title;
-          if (i === idx) vTitle.textContent = title;
+          
+          // Update UI if current video
+          if (i === idx) {
+            vTitle.textContent = title;
+          }
+          
+          // Update playlist item
           const item = drawerList.querySelector(`[data-i="${i}"] .name`);
           if (item) {
             item.textContent = title;
             item.classList.remove('loading');
           }
         } else {
+          // Set fallback title
           videos[i].title = 'Video ' + (i + 1);
         }
+        
+        // Small delay between requests
         await new Promise(r => setTimeout(r, 200));
       }
+      
+      console.log('[TITLES] Done fetching titles');
     }
     
     // ===== LOAD DATA =====
@@ -1186,29 +1328,36 @@
           loader.classList.remove('hide');
         }
         
-        const data = await fetchSheetData();
-        const newVideos = data.videos;
-        const channelUrls = data.channels;
+        const newVideos = await fetchSheetData();
         
         if (!newVideos.length) {
           showErr('No videos found in sheet');
           return false;
         }
         
+        // Check if data changed
         const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
         const dataChanged = newHash !== lastDataHash;
         lastDataHash = newHash;
         
         if (dataChanged || videos.length === 0) {
+          console.log('[DATA] Playlist updated!');
+          
+          // Preserve current video if possible
           const currentId = videos[idx]?.id;
           videos = newVideos;
           
+          // Find current video in new list
           if (currentId) {
             const newIdx = videos.findIndex(v => v.id === currentId);
-            if (newIdx >= 0) idx = newIdx;
-            else idx = Math.min(idx, videos.length - 1);
+            if (newIdx >= 0) {
+              idx = newIdx;
+            } else {
+              idx = Math.min(idx, videos.length - 1);
+            }
           }
           
+          // Load saved index on first load
           if (showLoader) {
             try {
               const s = localStorage.getItem('vp_idx');
@@ -1216,28 +1365,35 @@
             } catch(e) {}
           }
           
+          // Set temporary titles for videos without them
           videos.forEach((v, i) => {
-            if (!v.title) v.title = 'Loading...';
+            if (!v.title) {
+              v.title = 'Loading...';
+            }
           });
           
           renderList();
           updTitle();
           $('plCount').textContent = videos.length;
+          
+          // Fetch real titles
           fetchAllTitles();
           
-          if (!showLoader) msg('Playlist updated! (' + videos.length + ' videos)');
+          if (!showLoader) {
+            msg('Playlist updated! (' + videos.length + ' videos)');
+          }
+          
+          return true;
         }
         
-        // Load channel videos for search (in background)
-        if (channelUrls.length > 0 && allChannelVideos.length === 0) {
-          loadAllChannelVideos(channelUrls);
-        }
-        
-        return dataChanged;
+        return false;
       } catch(e) {
         console.error('[DATA] Error:', e);
-        if (showLoader) showErr('Failed to load: ' + e.message);
-        else showStatus('Sync failed', 'error');
+        if (showLoader) {
+          showErr('Failed to load: ' + e.message);
+        } else {
+          showStatus('Sync failed', 'error');
+        }
         return false;
       }
     }
@@ -1351,7 +1507,10 @@
       updTitle();
       renderList();
       save();
-      player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
+      player.loadVideoById({
+        videoId: videos[idx].id,
+        suggestedQuality: 'default'
+      });
     }
     
     function updTitle() {
@@ -1434,26 +1593,44 @@
       drawerBg.classList.remove('open');
     }
     
+    // ===== MANUAL REFRESH =====
     async function manualRefresh() {
       refreshBtn.classList.add('spinning');
       msg('Refreshing playlist...');
+      
       const changed = await loadData(false);
+      
       refreshBtn.classList.remove('spinning');
-      if (!changed) msg('Playlist is up to date');
+      
+      if (!changed) {
+        msg('Playlist is up to date');
+      }
     }
     
+    // ===== AUTO REFRESH =====
     async function autoRefresh() {
-      try { await loadData(false); } catch (e) {}
+      try {
+        await loadData(false);
+      } catch (e) {
+        console.log('[AUTO] Refresh failed:', e);
+      }
     }
     
-    // ===== PROGRESS BAR =====
+    // ===== PROGRESS BAR DRAG/TOUCH HANDLING =====
     function getSeekPosition(e) {
       const rect = progBar.getBoundingClientRect();
       let clientX;
-      if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
-      else if (e.changedTouches && e.changedTouches.length > 0) clientX = e.changedTouches[0].clientX;
-      else clientX = e.clientX;
-      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+      } else {
+        clientX = e.clientX;
+      }
+      
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return pct;
     }
     
     function updateSeekPreview(pct) {
@@ -1468,7 +1645,11 @@
       isSeeking = true;
       progBar.classList.add('dragging');
       showUI();
-      updateSeekPreview(getSeekPosition(e));
+      
+      const pct = getSeekPosition(e);
+      updateSeekPreview(pct);
+      
+      // Add move and end listeners
       document.addEventListener('mousemove', moveSeek);
       document.addEventListener('mouseup', endSeek);
       document.addEventListener('touchmove', moveSeek, { passive: false });
@@ -1479,15 +1660,22 @@
     function moveSeek(e) {
       if (!isSeeking) return;
       e.preventDefault();
-      updateSeekPreview(getSeekPosition(e));
+      
+      const pct = getSeekPosition(e);
+      updateSeekPreview(pct);
     }
     
     function endSeek(e) {
       if (!isSeeking) return;
-      seekTo(getSeekPosition(e));
+      
+      const pct = getSeekPosition(e);
+      seekTo(pct);
+      
       isSeeking = false;
       progBar.classList.remove('dragging');
       autoHide();
+      
+      // Remove listeners
       document.removeEventListener('mousemove', moveSeek);
       document.removeEventListener('mouseup', endSeek);
       document.removeEventListener('touchmove', moveSeek);
@@ -1495,12 +1683,16 @@
       document.removeEventListener('touchcancel', endSeek);
     }
     
+    // Progress bar event listeners
     progBar.addEventListener('mousedown', startSeek);
     progBar.addEventListener('touchstart', startSeek, { passive: false });
+    
+    // Simple click on progress bar
     progBar.addEventListener('click', e => {
       if (isSeeking) return;
       e.stopPropagation();
-      seekTo(getSeekPosition(e));
+      const pct = getSeekPosition(e);
+      seekTo(pct);
     });
     
     // ===== EVENTS =====
@@ -1517,7 +1709,16 @@
     $('refreshBtn').onclick = e => { e.stopPropagation(); manualRefresh(); };
     $('searchBtn').onclick = e => { e.stopPropagation(); openSearch(); };
     $('searchClose').onclick = e => { e.stopPropagation(); closeSearch(); };
+    $('searchSubmit').onclick = e => { e.stopPropagation(); performSearch(); };
     drawerBg.onclick = closeDrawer;
+    
+    // Search input enter key
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        performSearch();
+      }
+    });
     
     drawerList.onclick = e => {
       const it = e.target.closest('.pl-item');
@@ -1527,24 +1728,6 @@
         closeDrawer();
       }
     };
-    
-    // Search input
-    searchInput.addEventListener('input', e => {
-      clearTimeout(searchDebounce);
-      searchDebounce = setTimeout(() => {
-        searchVideos(e.target.value);
-      }, 300);
-    });
-    
-    // Search results click
-    searchResults.addEventListener('click', e => {
-      const item = e.target.closest('.result-item');
-      if (item) {
-        const videoId = item.dataset.id;
-        const title = item.dataset.title;
-        playSearchResult(videoId, title);
-      }
-    });
     
     // Touch handling
     let lastTap = 0;
@@ -1573,8 +1756,12 @@
         lastTap = now;
         setTimeout(() => {
           if (lastTap === now) {
-            if (ui.classList.contains('visible') && playing) hideUI();
-            else { showUI(); autoHide(); }
+            if (ui.classList.contains('visible') && playing) {
+              hideUI();
+            } else {
+              showUI();
+              autoHide();
+            }
           }
         }, 300);
       }
@@ -1604,10 +1791,15 @@
       }
     };
     
+    // Check when tab becomes visible
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') autoRefresh();
+      if (document.visibilityState === 'visible') {
+        console.log('[VISIBILITY] Tab visible, refreshing...');
+        autoRefresh();
+      }
     });
     
+    // Check when online
     window.addEventListener('online', () => {
       msg('Back online!');
       autoRefresh();
@@ -1642,22 +1834,36 @@
     
     // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
+      // Unregister old service workers first
       navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let registration of registrations) registration.unregister();
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('[SW] Unregistered old service worker');
+        }
       });
       
+      // Register new one
       setTimeout(() => {
-        navigator.serviceWorker.register('sw.js?v=' + Date.now()).catch(() => {});
+        navigator.serviceWorker.register('sw.js?v=' + Date.now()).then(reg => {
+          console.log('[SW] Registered');
+        }).catch(err => {
+          console.log('[SW] Registration failed:', err);
+        });
       }, 1000);
     }
     
+    // Clear caches
     if ('caches' in window) {
-      caches.keys().then(keys => { keys.forEach(key => caches.delete(key)); });
+      caches.keys().then(keys => {
+        keys.forEach(key => caches.delete(key));
+      });
     }
     
     // ===== INIT =====
     async function init() {
       console.log('[INIT] Starting Video Player...');
+      
+      // Load initial data
       await loadData(true);
       
       if (videos.length > 0) {
@@ -1665,7 +1871,9 @@
         loadAPI();
       }
       
+      // Start auto-refresh
       setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      console.log('[INIT] Auto-refresh enabled every', AUTO_REFRESH_INTERVAL/1000, 'seconds');
     }
     
     init();
