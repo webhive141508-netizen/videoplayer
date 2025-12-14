@@ -745,14 +745,8 @@
       'M53ToleyX6g9CE', // Part 4 - You need to add your real key
     ];
 
-  function getApiKey() {
-    try {
-      return atob(_k.join(''));
-    } catch (e) {
-      console.error('API key not configured');
-      return '';
-    }
-  }
+  console.log(atob(_k.join('')));
+</script>
 
   console.log('Decoded API Key:', getApiKey());
     
