@@ -410,6 +410,47 @@
     .search-close:active { background: rgba(255,255,255,0.2); }
     .search-close svg { width: 22px; height: 22px; fill: currentColor; }
     
+    .search-history {
+      padding: 10px 15px;
+      border-bottom: 1px solid #222;
+      background: #0a0a0a;
+    }
+    .search-history-title {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .search-history-title button {
+      background: none;
+      border: none;
+      color: #f87171;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+    .search-history-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .search-chip {
+      background: #222;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 5px 12px;
+      border-radius: 15px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .search-chip:active { background: #333; }
+    .search-chip svg { width: 12px; height: 12px; fill: currentColor; }
+    
     .search-info {
       padding: 10px 15px;
       font-size: 12px;
@@ -601,6 +642,164 @@
     .status.show { display: block; }
     .status.success { background: rgba(34, 197, 94, 0.9); color: white; }
     .status.error { background: rgba(239, 68, 68, 0.9); color: white; }
+    
+    /* History Button */
+    .nav-btn.history-btn { background: rgba(168, 85, 247, 0.3); }
+    .nav-btn.history-btn:active { background: rgba(168, 85, 247, 0.5); }
+    
+    /* History Modal */
+    .history-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.98);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .history-modal.open { opacity: 1; pointer-events: auto; }
+    
+    .history-header {
+      padding: 12px 15px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .history-header h3 svg { width: 20px; height: 20px; fill: #a855f7; }
+    .history-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .history-clear {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .history-clear:active { background: rgba(239, 68, 68, 0.4); }
+    
+    .history-content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px;
+    }
+    
+    .history-empty {
+      text-align: center;
+      padding: 50px 20px;
+      color: #666;
+    }
+    .history-empty svg {
+      width: 70px;
+      height: 70px;
+      fill: #333;
+      margin-bottom: 15px;
+    }
+    .history-empty p { font-size: 14px; line-height: 1.5; }
+    
+    .history-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .history-item:active { background: #2a2a2a; }
+    
+    .history-item-thumb {
+      width: 120px;
+      height: 68px;
+      background: #333;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .history-item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .history-item-thumb .duration {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: rgba(0,0,0,0.85);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .history-item-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .history-item-title {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .history-item-channel {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .history-item-time {
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .history-item-delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      background: rgba(239, 68, 68, 0.8);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .history-item:hover .history-item-delete,
+    .history-item:active .history-item-delete { opacity: 1; }
+    .history-item-delete svg { width: 14px; height: 14px; fill: currentColor; }
   </style>
 </head>
 <body>
@@ -626,6 +825,9 @@
         </div>
         <button class="nav-btn search-btn" id="searchBtn" title="Search Videos">
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </button>
+        <button class="nav-btn history-btn" id="historyBtn" title="Watch History">
+          <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
         </button>
         <button class="nav-btn refresh-btn" id="refreshBtn" title="Refresh Playlist">
           <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
@@ -702,11 +904,40 @@
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
     </div>
+    <div class="search-history" id="searchHistorySection" style="display:none;">
+      <div class="search-history-title">
+        <span>Recent Searches</span>
+        <button id="clearSearchHistory">Clear</button>
+      </div>
+      <div class="search-history-chips" id="searchHistoryChips"></div>
+    </div>
     <div class="search-info">Searching in <span id="channelCount">0</span> channels from Column C</div>
     <div class="search-results" id="searchResults">
       <div class="search-empty">
         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         <p>Enter a search term to find videos<br>from your channels</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- History Modal -->
+  <div class="history-modal" id="historyModal">
+    <div class="history-header">
+      <h3>
+        <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        Watch History
+      </h3>
+      <div class="history-header-actions">
+        <button class="history-clear" id="clearHistory">Clear All</button>
+        <button class="search-close" id="historyClose">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="history-content" id="historyContent">
+      <div class="history-empty">
+        <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        <p>No watch history yet.<br>Videos you play from search will appear here.</p>
       </div>
     </div>
   </div>
@@ -750,6 +981,8 @@
     let isSeeking = false;
     let channelIds = [];
     let isSearching = false;
+    let searchHistory = [];
+    let watchHistory = [];
     
     // ===== HELPERS =====
     const $ = id => document.getElementById(id);
@@ -780,6 +1013,10 @@
     const searchModal = $('searchModal');
     const searchInput = $('searchInput');
     const searchResults = $('searchResults');
+    const historyModal = $('historyModal');
+    const historyContent = $('historyContent');
+    const searchHistorySection = $('searchHistorySection');
+    const searchHistoryChips = $('searchHistoryChips');
     
     function fmt(s) {
       if (!s || isNaN(s)) return '0:00';
@@ -1154,10 +1391,112 @@
       `).join('');
     }
     
+    // ===== HISTORY FUNCTIONS =====
+    function loadHistory() {
+      try {
+        const sh = localStorage.getItem('vp_search_history');
+        if (sh) searchHistory = JSON.parse(sh);
+        const wh = localStorage.getItem('vp_watch_history');
+        if (wh) watchHistory = JSON.parse(wh);
+      } catch(e) {
+        searchHistory = [];
+        watchHistory = [];
+      }
+    }
+    
+    function saveSearchHistory() {
+      try {
+        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
+      } catch(e) {}
+    }
+    
+    function saveWatchHistory() {
+      try {
+        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
+      } catch(e) {}
+    }
+    
+    function addToSearchHistory(query) {
+      query = query.trim();
+      if (!query) return;
+      searchHistory = searchHistory.filter(q => q.toLowerCase() !== query.toLowerCase());
+      searchHistory.unshift(query);
+      if (searchHistory.length > 10) searchHistory = searchHistory.slice(0, 10);
+      saveSearchHistory();
+      renderSearchHistory();
+    }
+    
+    function addToWatchHistory(video) {
+      watchHistory = watchHistory.filter(v => v.id !== video.id);
+      watchHistory.unshift({
+        ...video,
+        watchedAt: Date.now()
+      });
+      if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
+      saveWatchHistory();
+    }
+    
+    function renderSearchHistory() {
+      if (searchHistory.length === 0) {
+        searchHistorySection.style.display = 'none';
+        return;
+      }
+      searchHistorySection.style.display = 'block';
+      searchHistoryChips.innerHTML = searchHistory.map(q => `
+        <div class="search-chip" data-query="${q.replace(/"/g, '&quot;')}">
+          <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+          ${q}
+        </div>
+      `).join('');
+    }
+    
+    function formatTimeAgo(timestamp) {
+      const seconds = Math.floor((Date.now() - timestamp) / 1000);
+      if (seconds < 60) return 'Just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return minutes + 'm ago';
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return hours + 'h ago';
+      const days = Math.floor(hours / 24);
+      if (days < 7) return days + 'd ago';
+      const weeks = Math.floor(days / 7);
+      return weeks + 'w ago';
+    }
+    
+    function renderWatchHistory() {
+      if (watchHistory.length === 0) {
+        historyContent.innerHTML = `
+          <div class="history-empty">
+            <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <p>No watch history yet.<br>Videos you play from search will appear here.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      historyContent.innerHTML = watchHistory.map((v, i) => `
+        <div class="history-item" data-id="${v.id}" data-title="${v.title.replace(/"/g, '&quot;')}" data-index="${i}">
+          <div class="history-item-thumb">
+            <img src="${v.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">
+            ${v.duration ? `<span class="duration">${v.duration}</span>` : ''}
+          </div>
+          <div class="history-item-info">
+            <div class="history-item-title">${v.title}</div>
+            <div class="history-item-channel">${v.channel || ''}</div>
+            <div class="history-item-time">${formatTimeAgo(v.watchedAt)}</div>
+          </div>
+          <button class="history-item-delete" data-delete="${i}">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+    
     // ===== SEARCH UI =====
     function openSearch() {
       searchModal.classList.add('open');
       searchInput.focus();
+      renderSearchHistory();
       if (player && playing) player.pauseVideo();
     }
     
@@ -1172,6 +1511,17 @@
       `;
     }
     
+    // ===== HISTORY UI =====
+    function openHistory() {
+      historyModal.classList.add('open');
+      renderWatchHistory();
+      if (player && playing) player.pauseVideo();
+    }
+    
+    function closeHistory() {
+      historyModal.classList.remove('open');
+    }
+    
     async function performSearch() {
       const query = searchInput.value.trim();
       if (!query) {
@@ -1181,6 +1531,8 @@
       
       if (isSearching) return;
       isSearching = true;
+      
+      addToSearchHistory(query);
       
       searchResults.innerHTML = `
         <div class="search-loading">
@@ -1211,6 +1563,18 @@
       if (item) {
         const videoId = item.dataset.id;
         const videoTitle = item.dataset.title;
+        const thumbnail = item.querySelector('.search-thumb img')?.src || '';
+        const duration = item.querySelector('.search-thumb .duration')?.textContent || '';
+        const channel = item.querySelector('.search-result-channel')?.textContent || '';
+        
+        // Add to watch history
+        addToWatchHistory({
+          id: videoId,
+          title: videoTitle,
+          thumbnail: thumbnail,
+          duration: duration,
+          channel: channel
+        });
         
         closeSearch();
         
@@ -1222,6 +1586,76 @@
           player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
           msg('Playing: ' + videoTitle);
         }
+      }
+    };
+    
+    // Search history chip click
+    searchHistoryChips.onclick = e => {
+      const chip = e.target.closest('.search-chip');
+      if (chip) {
+        const query = chip.dataset.query;
+        searchInput.value = query;
+        performSearch();
+      }
+    };
+    
+    // Clear search history
+    $('clearSearchHistory').onclick = e => {
+      e.stopPropagation();
+      searchHistory = [];
+      saveSearchHistory();
+      renderSearchHistory();
+      msg('Search history cleared');
+    };
+    
+    // History item click
+    historyContent.onclick = e => {
+      // Check if delete button was clicked
+      const deleteBtn = e.target.closest('.history-item-delete');
+      if (deleteBtn) {
+        e.stopPropagation();
+        const index = parseInt(deleteBtn.dataset.delete);
+        watchHistory.splice(index, 1);
+        saveWatchHistory();
+        renderWatchHistory();
+        msg('Removed from history');
+        return;
+      }
+      
+      const item = e.target.closest('.history-item');
+      if (item) {
+        const videoId = item.dataset.id;
+        const videoTitle = item.dataset.title;
+        
+        // Move to top of history
+        const index = parseInt(item.dataset.index);
+        const video = watchHistory[index];
+        watchHistory.splice(index, 1);
+        video.watchedAt = Date.now();
+        watchHistory.unshift(video);
+        saveWatchHistory();
+        
+        closeHistory();
+        
+        if (player && ready) {
+          loaderText.textContent = 'Loading...';
+          loader.classList.remove('hide');
+          vTitle.textContent = videoTitle;
+          vCount.textContent = 'From History';
+          player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
+          msg('Playing: ' + videoTitle);
+        }
+      }
+    };
+    
+    // Clear all watch history
+    $('clearHistory').onclick = e => {
+      e.stopPropagation();
+      if (confirm('Clear all watch history?')) {
+        watchHistory = [];
+        saveWatchHistory();
+        renderWatchHistory();
+        msg('Watch history cleared');
       }
     };
     
@@ -1578,6 +2012,8 @@
     $('searchBtn').onclick = e => { e.stopPropagation(); openSearch(); };
     $('searchClose').onclick = e => { e.stopPropagation(); closeSearch(); };
     $('searchSubmit').onclick = e => { e.stopPropagation(); performSearch(); };
+    $('historyBtn').onclick = e => { e.stopPropagation(); openHistory(); };
+    $('historyClose').onclick = e => { e.stopPropagation(); closeHistory(); };
     drawerBg.onclick = closeDrawer;
     
     searchInput.addEventListener('keydown', e => {
