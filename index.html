@@ -962,7 +962,7 @@
     // ===== YOUTUBE API KEY =====
     // IMPORTANT: Replace 'YOUR_API_KEY_HERE' with your actual YouTube Data API v3 key
     // Get your API key from: https://console.cloud.google.com/apis/credentials
-    const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
+    const YOUTUBE_API_KEY = "YOUR_API_KEY_HERE";
     
     // ===== STATE =====
     let player = null;
@@ -983,6 +983,43 @@
     let isSearching = false;
     let searchHistory = [];
     let watchHistory = [];
+    
+    // Load history from localStorage on startup
+    function loadHistoryFromStorage() {
+      try {
+        const savedSearchHistory = localStorage.getItem('vp_search_history');
+        if (savedSearchHistory) {
+          searchHistory = JSON.parse(savedSearchHistory);
+        }
+        const savedWatchHistory = localStorage.getItem('vp_watch_history');
+        if (savedWatchHistory) {
+          watchHistory = JSON.parse(savedWatchHistory);
+        }
+        console.log('[HISTORY] Loaded', searchHistory.length, 'search items and', watchHistory.length, 'watch items');
+      } catch(e) {
+        console.error('[HISTORY] Failed to load from storage:', e);
+        searchHistory = [];
+        watchHistory = [];
+      }
+    }
+    
+    // Save search history to localStorage
+    function saveSearchHistory() {
+      try {
+        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
+      } catch(e) {
+        console.error('[HISTORY] Failed to save search history:', e);
+      }
+    }
+    
+    // Save watch history to localStorage
+    function saveWatchHistory() {
+      try {
+        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
+      } catch(e) {
+        console.error('[HISTORY] Failed to save watch history:', e);
+      }
+    }
     
     // ===== HELPERS =====
     const $ = id => document.getElementById(id);
@@ -1392,29 +1429,7 @@
     }
     
     // ===== HISTORY FUNCTIONS =====
-    function loadHistory() {
-      try {
-        const sh = localStorage.getItem('vp_search_history');
-        if (sh) searchHistory = JSON.parse(sh);
-        const wh = localStorage.getItem('vp_watch_history');
-        if (wh) watchHistory = JSON.parse(wh);
-      } catch(e) {
-        searchHistory = [];
-        watchHistory = [];
-      }
-    }
-    
-    function saveSearchHistory() {
-      try {
-        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
-      } catch(e) {}
-    }
-    
-    function saveWatchHistory() {
-      try {
-        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
-      } catch(e) {}
-    }
+    // Note: loadHistoryFromStorage, saveSearchHistory, saveWatchHistory are defined above in STATE section
     
     function addToSearchHistory(query) {
       query = query.trim();
@@ -1434,6 +1449,7 @@
       });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
+      console.log('[HISTORY] Added to watch history:', video.title, '- Total:', watchHistory.length);
     }
     
     function renderSearchHistory() {
@@ -2132,8 +2148,11 @@
     async function init() {
       console.log('[INIT] Starting Video Player...');
       
+      // Load history from localStorage first
+      loadHistoryFromStorage();
+      
       // Check API key
-      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
+      if (YOUTUBE_API_KEY === "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE") {
         console.warn('[INIT] YouTube API key not configured! Search will not work.');
       }
       
