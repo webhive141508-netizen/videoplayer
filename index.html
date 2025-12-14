@@ -744,17 +744,17 @@
       '-hKWgh7hXds4', // Part 3 - This is a placeholder
       'M53ToleyX6g9CE', // Part 4 - You need to add your real key
     ];
-    // Decode and get the API key - Comment: Add your API key parts above (base64 encoded in chunks)
-    function getApiKey() {
-      // For security, you should store your key on a backend server
-      // This is just basic obfuscation, not true security
-      try {
-        return atob(_k.join(''));
-      } catch(e) {
-        console.error('Invalid API key configuration');
-        return '';
-      }
+
+  function getApiKey() {
+    try {
+      return atob(_k.join(''));
+    } catch (e) {
+      console.error('API key not configured');
+      return '';
     }
+  }
+
+  console.log('Decoded API Key:', getApiKey());
     
     // ===== STATE =====
     let player = null;
