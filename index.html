@@ -627,6 +627,22 @@
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
+    .status {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.8);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      color: #888;
+      z-index: 1000;
+      display: none;
+    }
+    .status.show { display: block; }
+    .status.success { background: rgba(34, 197, 94, 0.9); color: white; }
+    .status.error { background: rgba(239, 68, 68, 0.9); color: white; }
+    
     /* History Button */
     .nav-btn.history-btn { background: rgba(168, 85, 247, 0.3); }
     .nav-btn.history-btn:active { background: rgba(168, 85, 247, 0.5); }
@@ -838,6 +854,7 @@
     .debug-panel .log-entry.success { color: #22c55e; }
     .debug-panel .log-entry.error { color: #ef4444; }
     .debug-panel .log-entry.info { color: #3b82f6; }
+    .debug-panel .log-entry.warning { color: #f59e0b; }
   </style>
 </head>
 <body>
@@ -981,6 +998,7 @@
   </div>
   
   <div class="toast" id="toast"></div>
+  <div class="status" id="status"></div>
   
   <!-- Sync Indicator -->
   <div class="sync-indicator" id="syncIndicator">
@@ -1012,8 +1030,8 @@
     const AUTO_REFRESH_INTERVAL = 15000;
     
     // ===== GOOGLE APPS SCRIPT URL =====
-    // PUT YOUR NEW DEPLOYED URL HERE!
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwc_9GArsU3NMw_WKXBHp38rdWTRLKhnufcwprl-O-Ju6ckdtTyUQJMGfTa4VidQobWTw/exec";
+    // IMPORTANT: Replace this with YOUR deployed Apps Script URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2hdovFmuZIvMVmGgNIb-QMpDJWQZgCsNrnQ89Et9HKO1UhkJE5kZHsFPFWM9PVGYzZw/exec";
     
     // ===== YOUTUBE API KEY =====
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
@@ -1038,6 +1056,8 @@
     let searchHistory = [];
     let watchHistory = [];
     let debugLogs = [];
+    let sendQueue = [];
+    let isSending = false;
     
     // ===== DEBUG LOGGING =====
     function debugLog(message, type = 'info') {
@@ -1071,69 +1091,162 @@
       }
     });
     
-    // ===== SIMPLE TRACKING FUNCTIONS =====
+    // ===== GOOGLE SHEETS LOGGING =====
     
     function getUserId() {
-      let id = localStorage.getItem('vp_user_id');
-      if (!id) {
-        id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        localStorage.setItem('vp_user_id', id);
+      let userId = localStorage.getItem('vp_user_id');
+      if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('vp_user_id', userId);
       }
-      return id;
+      return userId;
     }
     
-    function getDevice() {
+    function getDeviceInfo() {
       const ua = navigator.userAgent;
-      if (/Android/i.test(ua)) return 'Android';
-      if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS';
-      if (/Windows/i.test(ua)) return 'Windows';
-      if (/Mac/i.test(ua)) return 'Mac';
-      return 'Other';
+      let device = 'Unknown';
+      let browser = 'Unknown';
+      
+      if (/Android/i.test(ua)) device = 'Android';
+      else if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS';
+      else if (/Windows/i.test(ua)) device = 'Windows';
+      else if (/Mac/i.test(ua)) device = 'Mac';
+      else if (/Linux/i.test(ua)) device = 'Linux';
+      
+      if (/Chrome/i.test(ua) && !/Edge|Edg/i.test(ua)) browser = 'Chrome';
+      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+      else if (/Firefox/i.test(ua)) browser = 'Firefox';
+      else if (/Edge|Edg/i.test(ua)) browser = 'Edge';
+      
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true;
+      
+      return { device, browser, isPWA };
     }
     
-    // Simple GET request using image - most reliable cross-origin method
-    function sendToSheet(action, data) {
+    // ===== RELIABLE FETCH WITH REDIRECT =====
+    // This method opens the URL in a hidden iframe, which follows redirects properly
+    async function sendToSheet(params) {
+      return new Promise((resolve) => {
+        const url = APPS_SCRIPT_URL + '?' + params.toString();
+        
+        debugLog(`Sending: ${params.get('action')} - ${(params.get('videoTitle') || params.get('searchQuery') || '').substring(0, 40)}...`, 'info');
+        
+        // Method 1: Try fetch with redirect follow
+        fetch(url, {
+          method: 'GET',
+          mode: 'no-cors',
+          redirect: 'follow'
+        }).then(() => {
+          debugLog(`✓ Sent via fetch: ${params.get('action')}`, 'success');
+          showSyncIndicator(true);
+          resolve(true);
+        }).catch(err => {
+          debugLog(`Fetch error: ${err.message}, trying image...`, 'warning');
+          
+          // Method 2: Fallback to image beacon
+          const img = new Image();
+          img.onload = img.onerror = () => {
+            debugLog(`✓ Sent via image: ${params.get('action')}`, 'success');
+            showSyncIndicator(true);
+            resolve(true);
+          };
+          img.src = url;
+        });
+      });
+    }
+    
+    // Queue system to send requests one at a time
+    function queueSend(params) {
+      sendQueue.push(params);
+      processSendQueue();
+    }
+    
+    async function processSendQueue() {
+      if (isSending || sendQueue.length === 0) return;
+      
+      isSending = true;
+      const params = sendQueue.shift();
+      
+      try {
+        await sendToSheet(params);
+      } catch (e) {
+        debugLog(`Queue error: ${e.message}`, 'error');
+      }
+      
+      isSending = false;
+      
+      // Process next after small delay
+      if (sendQueue.length > 0) {
+        setTimeout(processSendQueue, 300);
+      }
+    }
+    
+    // Log watch to Google Sheets
+    function logWatchToSheet(video, source = 'search') {
+      const deviceInfo = getDeviceInfo();
+      const action = source === 'search' ? 'watch_from_search' : 
+                     source === 'history' ? 'watch_from_history' : 
+                     'watch_from_playlist';
+      
+      debugLog(`Logging watch: "${video.title.substring(0, 50)}..." from ${source}`, 'info');
+      
       const params = new URLSearchParams({
         action: action,
+        timestamp: new Date().toISOString(),
         userId: getUserId(),
-        device: getDevice(),
-        t: Date.now() // Cache buster
+        videoId: video.id || '',
+        videoTitle: encodeURIComponent((video.title || '').substring(0, 200)),
+        channel: encodeURIComponent((video.channel || '').substring(0, 100)),
+        duration: video.duration || '',
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
       });
       
-      if (action === 'search') {
-        params.set('q', data);
-        debugLog(`Sending search: "${data}"`, 'info');
-      } else if (action === 'watch') {
-        params.set('title', data);
-        debugLog(`Sending watch: "${data.substring(0, 50)}..."`, 'info');
-      }
-      
-      const url = APPS_SCRIPT_URL + '?' + params.toString();
-      
-      // Use image beacon - works across origins
-      const img = new Image();
-      img.onload = () => {
-        debugLog(`✓ ${action} logged to sheet`, 'success');
-        showSyncIndicator(true);
-      };
-      img.onerror = () => {
-        // Even on "error", the request was sent - Google Apps Script returns text, not image
-        debugLog(`✓ ${action} sent (response received)`, 'success');
-        showSyncIndicator(true);
-      };
-      img.src = url;
+      queueSend(params);
     }
     
-    // Log search to Google Sheets (Column A)
-    function logSearch(query) {
-      if (!query.trim()) return;
-      sendToSheet('search', query.trim());
+    // Log search to Google Sheets
+    function logSearchToSheet(query, resultsCount) {
+      const deviceInfo = getDeviceInfo();
+      
+      debugLog(`Logging search: "${query}" (${resultsCount} results)`, 'info');
+      
+      const params = new URLSearchParams({
+        action: 'search',
+        timestamp: new Date().toISOString(),
+        userId: getUserId(),
+        searchQuery: encodeURIComponent(query),
+        resultsCount: resultsCount.toString(),
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
+      });
+      
+      queueSend(params);
     }
     
-    // Log video watch to Google Sheets (Column B)
-    function logWatch(videoTitle) {
-      if (!videoTitle) return;
-      sendToSheet('watch', videoTitle);
+    // Test connection
+    function testConnection() {
+      const deviceInfo = getDeviceInfo();
+      
+      debugLog('Testing Google Sheets connection...', 'info');
+      
+      const params = new URLSearchParams({
+        action: 'test_connection',
+        timestamp: new Date().toISOString(),
+        userId: getUserId(),
+        videoTitle: encodeURIComponent('Connection Test from PWA'),
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
+      });
+      
+      queueSend(params);
     }
     
     // Show sync indicator
@@ -1153,25 +1266,13 @@
       setTimeout(() => indicator.classList.remove('show'), 2000);
     }
     
-    // Test connection on load
-    function testConnection() {
-      debugLog('Testing sheet connection...', 'info');
-      const url = APPS_SCRIPT_URL + '?action=test&userId=' + getUserId() + '&device=' + getDevice() + '&t=' + Date.now();
-      
-      const img = new Image();
-      img.onload = img.onerror = () => {
-        debugLog('✓ Connection test sent', 'success');
-      };
-      img.src = url;
-    }
-    
-    // ===== LOCAL STORAGE =====
-    function loadFromStorage() {
+    // Load history from localStorage
+    function loadHistoryFromStorage() {
       try {
-        const s = localStorage.getItem('vp_search_history');
-        if (s) searchHistory = JSON.parse(s);
-        const w = localStorage.getItem('vp_watch_history');
-        if (w) watchHistory = JSON.parse(w);
+        const saved = localStorage.getItem('vp_search_history');
+        if (saved) searchHistory = JSON.parse(saved);
+        const savedWatch = localStorage.getItem('vp_watch_history');
+        if (savedWatch) watchHistory = JSON.parse(savedWatch);
         debugLog(`Loaded ${searchHistory.length} search, ${watchHistory.length} watch from storage`, 'info');
       } catch(e) {
         searchHistory = [];
@@ -1580,15 +1681,12 @@
       isSearching = true;
       
       addToSearchHistory(query);
-      
-      // LOG SEARCH TO GOOGLE SHEETS
-      logSearch(query);
-      
       searchResults.innerHTML = `<div class="search-loading"><div class="spinner"></div><p>Searching ${channelIds.length} channels...</p></div>`;
       
       try {
         const results = await searchVideosInChannels(query);
         renderSearchResults(results, query);
+        logSearchToSheet(query, results.length);
       } catch (e) {
         searchResults.innerHTML = `<div class="search-empty"><p>Search failed. Try again.</p></div>`;
       }
@@ -1609,13 +1707,8 @@
         };
         
         debugLog(`Playing from search: ${videoData.title.substring(0, 50)}...`, 'info');
-        
-        // Add to local watch history
         addToWatchHistory(videoData);
-        
-        // LOG VIDEO WATCH TO GOOGLE SHEETS
-        logWatch(videoData.title);
-        
+        logWatchToSheet(videoData, 'search');
         closeSearch();
         
         if (player && ready) {
@@ -1656,9 +1749,7 @@
         watchHistory.unshift(video);
         saveWatchHistory();
         
-        // LOG VIDEO WATCH TO GOOGLE SHEETS
-        logWatch(video.title);
-        
+        logWatchToSheet(video, 'history');
         closeHistory();
         
         if (player && ready) {
@@ -1787,8 +1878,9 @@
       
       // Log initial playlist video
       const video = videos[idx];
-      if (video && video.title) {
-        logWatch(video.title);
+      if (video) {
+        debugLog(`Initial playlist video: ${video.title}`, 'info');
+        logWatchToSheet(video, 'playlist');
       }
     }
     
@@ -1809,13 +1901,9 @@
       loader.classList.remove('hide');
       updTitle(); renderList(); save();
       
-      // LOG VIDEO WATCH TO GOOGLE SHEETS
       const video = videos[idx];
-      if (video && video.title) {
-        logWatch(video.title);
-      }
-      
-      player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
+      logWatchToSheet(video, 'playlist');
+      player.loadVideoById({ videoId: video.id, suggestedQuality: 'default' });
     }
     
     function updTitle() {
@@ -2008,7 +2096,7 @@
       debugLog(`User ID: ${getUserId()}`, 'info');
       debugLog(`Apps Script URL: ${APPS_SCRIPT_URL.substring(0, 50)}...`, 'info');
       
-      loadFromStorage();
+      loadHistoryFromStorage();
       
       // Test connection on startup
       testConnection();
