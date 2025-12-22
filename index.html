@@ -800,6 +800,26 @@
     .history-item:hover .history-item-delete,
     .history-item:active .history-item-delete { opacity: 1; }
     .history-item-delete svg { width: 14px; height: 14px; fill: currentColor; }
+    
+    /* Sync indicator */
+    .sync-indicator {
+      position: fixed;
+      top: 50px;
+      right: 8px;
+      background: rgba(34, 197, 94, 0.9);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      color: white;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .sync-indicator.show { opacity: 1; }
+    .sync-indicator svg { width: 12px; height: 12px; fill: white; }
   </style>
 </head>
 <body>
@@ -944,6 +964,10 @@
   
   <div class="toast" id="toast"></div>
   <div class="status" id="status"></div>
+  <div class="sync-indicator" id="syncIndicator">
+    <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+    Synced
+  </div>
   
   <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -960,9 +984,13 @@
     const AUTO_REFRESH_INTERVAL = 15000;
     
     // ===== YOUTUBE API KEY =====
-    // IMPORTANT: Replace 'YOUR_API_KEY_HERE' with your actual YouTube Data API v3 key
-    // Get your API key from: https://console.cloud.google.com/apis/credentials
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
+    
+    // ===== GOOGLE APPS SCRIPT WEB APP URL =====
+    // IMPORTANT: Deploy your Google Apps Script as a web app and paste the URL here
+    // This allows you to track user watch history on your Google Sheet
+    // Set to empty string "" to disable remote tracking
+    const APPS_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
     
     // ===== STATE =====
     let player = null;
@@ -983,6 +1011,130 @@
     let isSearching = false;
     let searchHistory = [];
     let watchHistory = [];
+    let userId = null;
+    let pendingSyncs = [];
+    let isSyncing = false;
+    
+    // Generate or retrieve unique user ID
+    function getUserId() {
+      try {
+        let id = localStorage.getItem('vp_user_id');
+        if (!id) {
+          id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('vp_user_id', id);
+        }
+        return id;
+      } catch(e) {
+        return 'anonymous_' + Math.random().toString(36).substr(2, 9);
+      }
+    }
+    
+    // Get device/browser info for tracking
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      let device = 'Unknown';
+      let browser = 'Unknown';
+      
+      if (/Android/i.test(ua)) device = 'Android';
+      else if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS';
+      else if (/Windows/i.test(ua)) device = 'Windows';
+      else if (/Mac/i.test(ua)) device = 'Mac';
+      else if (/Linux/i.test(ua)) device = 'Linux';
+      
+      if (/Chrome/i.test(ua) && !/Edge|Edg/i.test(ua)) browser = 'Chrome';
+      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+      else if (/Firefox/i.test(ua)) browser = 'Firefox';
+      else if (/Edge|Edg/i.test(ua)) browser = 'Edge';
+      
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true;
+      
+      return {
+        device,
+        browser,
+        isPWA,
+        screenWidth: screen.width,
+        screenHeight: screen.height,
+        language: navigator.language
+      };
+    }
+    
+    // ===== SYNC WATCH HISTORY TO GOOGLE SHEETS =====
+    async function syncToRemote(videoData, action = 'watch') {
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzy26zMpRq3Si6zOuSekTElQ6-6uwS6C0ZWfKUZv0Ys5hVHQ_eiyMJz4aHaeqj87_QVeg/exec") {
+        console.log('[SYNC] Remote sync disabled - no Apps Script URL configured');
+        return false;
+      }
+      
+      const payload = {
+        action: action,
+        userId: userId,
+        timestamp: new Date().toISOString(),
+        deviceInfo: getDeviceInfo(),
+        video: {
+          id: videoData.id,
+          title: videoData.title || '',
+          channel: videoData.channel || '',
+          duration: videoData.duration || '',
+          thumbnail: videoData.thumbnail || '',
+          url: `https://www.youtube.com/watch?v=${videoData.id}`
+        }
+      };
+      
+      // Add to pending syncs queue
+      pendingSyncs.push(payload);
+      
+      // Process queue
+      if (!isSyncing) {
+        processSyncQueue();
+      }
+      
+      return true;
+    }
+    
+    async function processSyncQueue() {
+      if (pendingSyncs.length === 0 || isSyncing) return;
+      
+      isSyncing = true;
+      
+      while (pendingSyncs.length > 0) {
+        const payload = pendingSyncs.shift();
+        
+        try {
+          const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Google Apps Script requires no-cors for POST
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          console.log('[SYNC] Sent to remote:', payload.video.title);
+          showSyncIndicator();
+          
+        } catch (error) {
+          console.error('[SYNC] Failed to sync:', error);
+          // Re-add to queue for retry (with limit)
+          if (!payload.retryCount) payload.retryCount = 0;
+          if (payload.retryCount < 3) {
+            payload.retryCount++;
+            pendingSyncs.push(payload);
+          }
+        }
+        
+        // Small delay between requests
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      isSyncing = false;
+    }
+    
+    function showSyncIndicator() {
+      const indicator = $('syncIndicator');
+      indicator.classList.add('show');
+      setTimeout(() => indicator.classList.remove('show'), 1500);
+    }
     
     // Load history from localStorage on startup
     function loadHistoryFromStorage() {
@@ -1111,23 +1263,18 @@
       if (!url) return null;
       url = url.trim();
       
-      // Direct channel ID format: UC...
       let match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
       if (match) return match[1];
       
-      // youtube.com/channel/UC...
       match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
       
-      // youtube.com/@handle
       match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'handle', value: match[1] };
       
-      // youtube.com/c/customname
       match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'custom', value: match[1] };
       
-      // youtube.com/user/username
       match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'user', value: match[1] };
       
@@ -1227,7 +1374,6 @@
             const urlCell = row.c[1];
             const channelCell = row.c[2];
             
-            // Extract video from Column B
             let url = '';
             if (urlCell && urlCell.v) {
               url = String(urlCell.v).trim();
@@ -1245,7 +1391,6 @@
               newVideos.push({ id: videoId, title: title || '', url: url });
             }
             
-            // Extract channel from Column C
             if (channelCell && channelCell.v) {
               const channelUrl = String(channelCell.v).trim();
               if (channelUrl && !seenChannels.has(channelUrl)) {
@@ -1324,7 +1469,6 @@
       
       const allResults = [];
       
-      // Resolve all channels to IDs first
       const resolvedIds = [];
       for (const ch of channelIds) {
         const resolved = await resolveChannelToId(ch);
@@ -1333,7 +1477,6 @@
       
       console.log('[SEARCH] Searching in', resolvedIds.length, 'resolved channels');
       
-      // Search each channel
       for (const channelId of resolvedIds) {
         try {
           const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${YOUTUBE_API_KEY}`;
@@ -1366,7 +1509,6 @@
         }
       }
       
-      // Get video details (duration, views)
       if (allResults.length > 0) {
         try {
           const videoIds = allResults.map(r => r.id).join(',');
@@ -1389,7 +1531,6 @@
         }
       }
       
-      // Remove duplicates
       const unique = [];
       const seen = new Set();
       for (const r of allResults) {
@@ -1414,7 +1555,7 @@
       }
       
       searchResults.innerHTML = results.map(r => `
-        <div class="search-result-item" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}">
+        <div class="search-result-item" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}" data-channel="${(r.channel || '').replace(/"/g, '&quot;')}" data-duration="${r.duration || ''}" data-thumbnail="${r.thumbnail || ''}">
           <div class="search-thumb">
             <img src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">
             ${r.duration ? `<span class="duration">${r.duration}</span>` : ''}
@@ -1429,8 +1570,6 @@
     }
     
     // ===== HISTORY FUNCTIONS =====
-    // Note: loadHistoryFromStorage, saveSearchHistory, saveWatchHistory are defined above in STATE section
-    
     function addToSearchHistory(query) {
       query = query.trim();
       if (!query) return;
@@ -1449,6 +1588,10 @@
       });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
+      
+      // Sync to remote (Google Sheets)
+      syncToRemote(video, 'watch');
+      
       console.log('[HISTORY] Added to watch history:', video.title, '- Total:', watchHistory.length);
     }
     
@@ -1579,11 +1722,11 @@
       if (item) {
         const videoId = item.dataset.id;
         const videoTitle = item.dataset.title;
-        const thumbnail = item.querySelector('.search-thumb img')?.src || '';
-        const duration = item.querySelector('.search-thumb .duration')?.textContent || '';
-        const channel = item.querySelector('.search-result-channel')?.textContent || '';
+        const thumbnail = item.dataset.thumbnail || '';
+        const duration = item.dataset.duration || '';
+        const channel = item.dataset.channel || '';
         
-        // Add to watch history
+        // Add to watch history (local + remote)
         addToWatchHistory({
           id: videoId,
           title: videoTitle,
@@ -1626,7 +1769,6 @@
     
     // History item click
     historyContent.onclick = e => {
-      // Check if delete button was clicked
       const deleteBtn = e.target.closest('.history-item-delete');
       if (deleteBtn) {
         e.stopPropagation();
@@ -1643,13 +1785,15 @@
         const videoId = item.dataset.id;
         const videoTitle = item.dataset.title;
         
-        // Move to top of history
         const index = parseInt(item.dataset.index);
         const video = watchHistory[index];
         watchHistory.splice(index, 1);
         video.watchedAt = Date.now();
         watchHistory.unshift(video);
         saveWatchHistory();
+        
+        // Sync re-watch to remote
+        syncToRemote(video, 'rewatch');
         
         closeHistory();
         
@@ -1832,6 +1976,18 @@
       autoHide();
       startUpd();
       player.playVideo();
+      
+      // Track playlist video play
+      const v = videos[idx];
+      if (v) {
+        syncToRemote({
+          id: v.id,
+          title: v.title || 'Unknown',
+          channel: '',
+          duration: fmt(dur),
+          thumbnail: `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`
+        }, 'playlist_play');
+      }
     }
     
     function onState(e) {
@@ -1868,6 +2024,17 @@
       updTitle();
       renderList();
       save();
+      
+      // Track playlist navigation
+      const v = videos[idx];
+      syncToRemote({
+        id: v.id,
+        title: v.title || 'Unknown',
+        channel: '',
+        duration: '',
+        thumbnail: `https://img.youtube.com/vi/${v.id}/mqdefault.jpg`
+      }, 'playlist_play');
+      
       player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
     }
     
@@ -2148,12 +2315,23 @@
     async function init() {
       console.log('[INIT] Starting Video Player...');
       
+      // Get/generate user ID
+      userId = getUserId();
+      console.log('[INIT] User ID:', userId);
+      
       // Load history from localStorage first
       loadHistoryFromStorage();
       
       // Check API key
       if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
         console.warn('[INIT] YouTube API key not configured! Search will not work.');
+      }
+      
+      // Check Apps Script URL
+      if (APPS_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
+        console.warn('[INIT] Google Apps Script URL not configured! Remote history tracking disabled.');
+      } else {
+        console.log('[INIT] Remote history tracking enabled');
       }
       
       await loadData(true);
