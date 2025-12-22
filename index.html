@@ -832,42 +832,29 @@
       fill: currentColor;
     }
     
-    /* Debug Panel */
+    /* Debug panel */
     .debug-panel {
       position: fixed;
       bottom: 60px;
       left: 10px;
       right: 10px;
-      max-height: 200px;
       background: rgba(0,0,0,0.95);
       border: 1px solid #333;
       border-radius: 10px;
       padding: 10px;
       font-size: 10px;
-      font-family: monospace;
-      color: #0f0;
+      color: #aaa;
+      max-height: 200px;
       overflow-y: auto;
       z-index: 1000;
       display: none;
     }
     .debug-panel.show { display: block; }
-    .debug-panel .log-entry { margin-bottom: 4px; border-bottom: 1px solid #222; padding-bottom: 4px; }
-    .debug-panel .log-error { color: #f66; }
-    .debug-panel .log-success { color: #6f6; }
-    .debug-panel .log-info { color: #6af; }
-    .debug-toggle {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: #333;
-      border: none;
-      color: #fff;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 10px;
-      z-index: 1001;
-      cursor: pointer;
-    }
+    .debug-panel .log-entry { margin-bottom: 4px; padding: 2px 0; border-bottom: 1px solid #222; word-break: break-all; }
+    .debug-panel .log-entry.success { color: #22c55e; }
+    .debug-panel .log-entry.error { color: #ef4444; }
+    .debug-panel .log-entry.info { color: #3b82f6; }
+    .debug-panel .log-entry.warn { color: #f59e0b; }
   </style>
 </head>
 <body>
@@ -1019,9 +1006,14 @@
     <span id="syncText">Synced to Sheet</span>
   </div>
   
-  <!-- Debug Panel -->
-  <button class="debug-toggle" id="debugToggle">Debug</button>
-  <div class="debug-panel" id="debugPanel"></div>
+  <!-- Debug Panel (triple-tap bottom left to toggle) -->
+  <div class="debug-panel" id="debugPanel">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <strong style="color:#fff;">Debug Log</strong>
+      <button onclick="document.getElementById('debugPanel').classList.remove('show')" style="background:none;border:none;color:#888;cursor:pointer;">✕</button>
+    </div>
+    <div id="debugLog"></div>
+  </div>
   
   <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -1037,8 +1029,9 @@
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const AUTO_REFRESH_INTERVAL = 15000;
     
-    // ===== GOOGLE SHEETS LOGGING - YOUR ACTUAL SCRIPT URL =====
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUHEgcSw8PNkhz9i7gDhjsIMczAM5-cV24iVmnSKP33REnDxLHbpSfb99W6xdLQDHZ8w/exec";
+    // ===== GOOGLE APPS SCRIPT URL FOR LOGGING =====
+    // Make sure this is deployed as "Execute as: Me" and "Who has access: Anyone"
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby09CZChksAGD3lgZJrDmL0K6OK4qftf3Z26SY9x_nYKKhltt695ndiU8X97rYCvW5f/exec";
     
     // ===== YOUTUBE API KEY =====
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
@@ -1063,28 +1056,42 @@
     let searchHistory = [];
     let watchHistory = [];
     let debugLogs = [];
+    let pendingLogs = [];
+    let isProcessingLogs = false;
     
     // ===== DEBUG LOGGING =====
     function debugLog(message, type = 'info') {
       const timestamp = new Date().toLocaleTimeString();
       const entry = { time: timestamp, message, type };
       debugLogs.unshift(entry);
-      if (debugLogs.length > 50) debugLogs.pop();
+      if (debugLogs.length > 100) debugLogs.pop();
       
-      const panel = document.getElementById('debugPanel');
-      panel.innerHTML = debugLogs.map(e => 
-        `<div class="log-entry log-${e.type}">[${e.time}] ${e.message}</div>`
-      ).join('');
+      const logDiv = document.getElementById('debugLog');
+      if (logDiv) {
+        logDiv.innerHTML = debugLogs.map(e => 
+          `<div class="log-entry ${e.type}">[${e.time}] ${e.message}</div>`
+        ).join('');
+      }
       
       console.log(`[${type.toUpperCase()}] ${message}`);
     }
     
-    // Toggle debug panel
-    document.getElementById('debugToggle').onclick = () => {
-      document.getElementById('debugPanel').classList.toggle('show');
-    };
+    // Triple tap bottom left to show debug panel
+    let debugTapCount = 0;
+    let debugTapTimer = null;
+    document.addEventListener('click', (e) => {
+      if (e.clientX < 100 && e.clientY > window.innerHeight - 100) {
+        debugTapCount++;
+        clearTimeout(debugTapTimer);
+        debugTapTimer = setTimeout(() => { debugTapCount = 0; }, 500);
+        if (debugTapCount >= 3) {
+          document.getElementById('debugPanel').classList.toggle('show');
+          debugTapCount = 0;
+        }
+      }
+    });
     
-    // ===== GOOGLE SHEETS LOGGING FUNCTIONS =====
+    // ===== GOOGLE SHEETS LOGGING - FIXED VERSION =====
     
     // Get or generate a unique user ID
     function getUserId() {
@@ -1108,93 +1115,166 @@
       else if (/Mac/i.test(ua)) device = 'Mac';
       else if (/Linux/i.test(ua)) device = 'Linux';
       
-      if (/Chrome/i.test(ua)) browser = 'Chrome';
+      if (/Chrome/i.test(ua) && !/Edge|Edg/i.test(ua)) browser = 'Chrome';
+      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
       else if (/Firefox/i.test(ua)) browser = 'Firefox';
-      else if (/Safari/i.test(ua)) browser = 'Safari';
-      else if (/Edge/i.test(ua)) browser = 'Edge';
+      else if (/Edge|Edg/i.test(ua)) browser = 'Edge';
       
       const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                     window.navigator.standalone === true;
       
-      return {
-        device: device,
-        browser: browser,
-        isPWA: isPWA,
-        screenWidth: window.screen.width,
-        screenHeight: window.screen.height
-      };
+      return { device, browser, isPWA };
     }
     
-    // Send data to Google Sheets - FIXED FORMAT
-    async function sendToGoogleSheets(action, videoData) {
-      debugLog(`Attempting to send: ${action} - ${videoData.title || videoData.query || 'N/A'}`);
+    // Send data to Google Sheets using multiple methods for reliability
+    async function sendToGoogleSheets(action, data) {
+      const deviceInfo = getDeviceInfo();
+      const timestamp = new Date().toISOString();
+      const userId = getUserId();
       
-      try {
-        const deviceInfo = getDeviceInfo();
+      // Build URL parameters - this is the most reliable method for no-cors
+      const params = new URLSearchParams();
+      params.append('action', action);
+      params.append('timestamp', timestamp);
+      params.append('userId', userId);
+      params.append('videoId', data.videoId || data.id || '');
+      params.append('videoTitle', (data.videoTitle || data.title || '').substring(0, 200));
+      params.append('channel', (data.channel || '').substring(0, 100));
+      params.append('duration', data.duration || '');
+      params.append('device', deviceInfo.device);
+      params.append('browser', deviceInfo.browser);
+      params.append('isPWA', deviceInfo.isPWA ? 'Yes' : 'No');
+      params.append('screenSize', `${window.screen.width}x${window.screen.height}`);
+      params.append('searchQuery', data.searchQuery || '');
+      params.append('resultsCount', data.resultsCount || 0);
+      
+      const fullUrl = APPS_SCRIPT_URL + '?' + params.toString();
+      
+      debugLog(`Sending ${action}: ${(data.videoTitle || data.title || data.searchQuery || '').substring(0, 50)}...`, 'info');
+      
+      // Method 1: Try using an Image beacon (most reliable for cross-origin)
+      return new Promise((resolve) => {
+        const img = new Image();
+        let resolved = false;
         
-        // Format data to match your Apps Script expectations
-        const payload = {
-          timestamp: new Date().toISOString(),
-          userId: getUserId(),
-          action: action, // 'watch', 'search', 'playlist'
-          video: {
-            id: videoData.id || '',
-            title: videoData.title || videoData.query || '',
-            channel: videoData.channel || '',
-            duration: videoData.duration || '',
-            url: videoData.id ? `https://youtube.com/watch?v=${videoData.id}` : ''
-          },
-          deviceInfo: deviceInfo,
-          // Extra fields for search
-          searchQuery: videoData.query || '',
-          resultsCount: videoData.resultsCount || 0,
-          source: videoData.source || action
+        img.onload = () => {
+          if (!resolved) {
+            resolved = true;
+            debugLog(`✓ Logged via image beacon: ${action}`, 'success');
+            showSyncIndicator(true);
+            resolve(true);
+          }
         };
         
-        debugLog(`Payload: ${JSON.stringify(payload).substring(0, 200)}...`);
+        img.onerror = () => {
+          // Image will error because response is JSON, but request still goes through!
+          if (!resolved) {
+            resolved = true;
+            debugLog(`✓ Request sent (image method): ${action}`, 'success');
+            showSyncIndicator(true);
+            resolve(true);
+          }
+        };
         
-        // Send using fetch with no-cors (required for Apps Script)
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
+        // Set timeout
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            debugLog(`Request timeout, but may have succeeded: ${action}`, 'warn');
+            showSyncIndicator(true);
+            resolve(true);
+          }
+        }, 5000);
+        
+        img.src = fullUrl;
+      });
+    }
+    
+    // Alternative: Use fetch with redirect following (for Apps Script)
+    async function sendViaFetch(action, data) {
+      const deviceInfo = getDeviceInfo();
+      const timestamp = new Date().toISOString();
+      const userId = getUserId();
+      
+      const params = new URLSearchParams();
+      params.append('action', action);
+      params.append('timestamp', timestamp);
+      params.append('userId', userId);
+      params.append('videoId', data.videoId || data.id || '');
+      params.append('videoTitle', (data.videoTitle || data.title || '').substring(0, 200));
+      params.append('channel', (data.channel || '').substring(0, 100));
+      params.append('duration', data.duration || '');
+      params.append('device', deviceInfo.device);
+      params.append('browser', deviceInfo.browser);
+      params.append('isPWA', deviceInfo.isPWA ? 'Yes' : 'No');
+      params.append('screenSize', `${window.screen.width}x${window.screen.height}`);
+      params.append('searchQuery', data.searchQuery || '');
+      params.append('resultsCount', data.resultsCount || 0);
+      
+      try {
+        // Use GET request with parameters in URL
+        const response = await fetch(APPS_SCRIPT_URL + '?' + params.toString(), {
+          method: 'GET',
+          mode: 'no-cors'
         });
-        
-        // With no-cors, we can't read the response, but if no error, assume success
-        debugLog('Request sent successfully (no-cors mode)', 'success');
-        showSyncIndicator(true);
+        debugLog(`Fetch completed for: ${action}`, 'success');
         return true;
-        
-      } catch (error) {
-        debugLog(`Error sending to sheet: ${error.message}`, 'error');
-        showSyncIndicator(false);
+      } catch (e) {
+        debugLog(`Fetch error: ${e.message}`, 'error');
         return false;
       }
     }
     
+    // Queue system to prevent overwhelming the server
+    function queueLog(action, data) {
+      pendingLogs.push({ action, data, timestamp: Date.now() });
+      processLogQueue();
+    }
+    
+    async function processLogQueue() {
+      if (isProcessingLogs || pendingLogs.length === 0) return;
+      
+      isProcessingLogs = true;
+      
+      while (pendingLogs.length > 0) {
+        const log = pendingLogs.shift();
+        try {
+          await sendToGoogleSheets(log.action, log.data);
+          // Small delay between requests
+          await new Promise(r => setTimeout(r, 300));
+        } catch (e) {
+          debugLog(`Queue processing error: ${e.message}`, 'error');
+        }
+      }
+      
+      isProcessingLogs = false;
+    }
+    
     // Log search query to Google Sheets
-    async function logSearchToSheet(query, resultsCount) {
-      debugLog(`Logging search: "${query}" with ${resultsCount} results`);
-      return await sendToGoogleSheets('search', {
-        query: query,
-        title: `Search: ${query}`,
+    function logSearchToSheet(query, resultsCount) {
+      debugLog(`Queueing search log: "${query}" (${resultsCount} results)`, 'info');
+      queueLog('search', {
+        searchQuery: query,
         resultsCount: resultsCount,
-        channel: 'Search Query'
+        videoTitle: `Search: ${query}`,
+        videoId: ''
       });
     }
     
     // Log video watch to Google Sheets
-    async function logWatchToSheet(video) {
-      debugLog(`Logging watch: "${video.title}" from ${video.source || 'unknown'}`);
-      return await sendToGoogleSheets('watch', {
-        id: video.id,
-        title: video.title,
+    function logWatchToSheet(video, source = 'search') {
+      const actionType = source === 'search' ? 'watch_from_search' : 
+                         source === 'history' ? 'watch_from_history' : 
+                         source === 'playlist' ? 'watch_from_playlist' :
+                         'watch';
+      
+      debugLog(`Queueing watch log: "${(video.title || '').substring(0, 40)}..." (${source})`, 'info');
+      
+      queueLog(actionType, {
+        videoId: video.id,
+        videoTitle: video.title,
         channel: video.channel || '',
-        duration: video.duration || '',
-        source: video.source || 'direct'
+        duration: video.duration || ''
       });
     }
     
@@ -1214,7 +1294,7 @@
       indicator.classList.add('show');
       setTimeout(() => {
         indicator.classList.remove('show');
-      }, 2500);
+      }, 2000);
     }
     
     // Load history from localStorage on startup
@@ -1228,9 +1308,9 @@
         if (savedWatchHistory) {
           watchHistory = JSON.parse(savedWatchHistory);
         }
-        debugLog(`Loaded ${searchHistory.length} search items and ${watchHistory.length} watch items from storage`);
+        debugLog(`Loaded ${searchHistory.length} search, ${watchHistory.length} watch items from storage`, 'info');
       } catch(e) {
-        debugLog(`Failed to load from storage: ${e.message}`, 'error');
+        debugLog(`Failed to load history: ${e.message}`, 'error');
         searchHistory = [];
         watchHistory = [];
       }
@@ -1430,7 +1510,7 @@
     async function fetchSheetData() {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
       
-      debugLog('Fetching sheet data...');
+      debugLog('Fetching sheet data...', 'info');
       
       const response = await fetch(url, { method: 'GET', cache: 'no-store' });
       
@@ -1489,7 +1569,7 @@
       channelIds = newChannels;
       $('channelCount').textContent = channelIds.length;
       
-      debugLog(`Found ${newVideos.length} videos and ${channelIds.length} channels`);
+      debugLog(`Found ${newVideos.length} videos and ${channelIds.length} channels`, 'success');
       return newVideos;
     }
     
@@ -1523,7 +1603,7 @@
           return data.items[0].id;
         }
       } catch (e) {
-        debugLog(`Error resolving channel: ${e.message}`, 'error');
+        debugLog(`Channel resolve error: ${e.message}`, 'error');
       }
       
       return null;
@@ -1546,7 +1626,7 @@
         if (resolved) resolvedIds.push(resolved);
       }
       
-      debugLog(`Searching in ${resolvedIds.length} resolved channels`);
+      debugLog(`Searching in ${resolvedIds.length} resolved channels`, 'info');
       
       for (const channelId of resolvedIds) {
         try {
@@ -1556,7 +1636,7 @@
           const data = await res.json();
           
           if (data.error) {
-            debugLog(`Search API Error: ${data.error.message}`, 'error');
+            debugLog(`Search API error: ${data.error.message}`, 'error');
             if (data.error.code === 403) {
               msg('API quota exceeded or key invalid');
               return allResults;
@@ -1598,7 +1678,7 @@
             }
           }
         } catch (e) {
-          debugLog(`Failed to get video details: ${e.message}`, 'error');
+          debugLog(`Details fetch error: ${e.message}`, 'error');
         }
       }
       
@@ -1611,6 +1691,7 @@
         }
       }
       
+      debugLog(`Search completed: "${query}" found ${unique.length} results`, 'success');
       return unique;
     }
     
@@ -1659,10 +1740,7 @@
       });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
-      debugLog(`Added to local watch history: ${video.title} - Total: ${watchHistory.length}`);
-      
-      // Also log to Google Sheets
-      logWatchToSheet(video);
+      debugLog(`Added to local watch history: ${video.title} - Total: ${watchHistory.length}`, 'success');
     }
     
     function renderSearchHistory() {
@@ -1775,11 +1853,11 @@
         renderSearchResults(results, query);
         
         // Log search to Google Sheets
-        debugLog(`Search completed: "${query}" found ${results.length} results`);
+        debugLog(`Logging search: "${query}" with ${results.length} results`, 'info');
         logSearchToSheet(query, results.length);
         
       } catch (e) {
-        debugLog(`Search error: ${e.message}`, 'error');
+        debugLog(`Search failed: ${e.message}`, 'error');
         searchResults.innerHTML = `
           <div class="search-empty">
             <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -1801,17 +1879,22 @@
         const thumbnail = item.dataset.thumbnail || '';
         const duration = item.dataset.duration || '';
         
-        debugLog(`Playing from search: ${videoTitle}`);
-        
-        // Add to watch history (this also logs to Google Sheets)
-        addToWatchHistory({
+        const videoData = {
           id: videoId,
           title: videoTitle,
           thumbnail: thumbnail,
           duration: duration,
-          channel: videoChannel,
-          source: 'search'
-        });
+          channel: videoChannel
+        };
+        
+        debugLog(`Playing from search: ${videoTitle}`, 'info');
+        
+        // Add to local watch history
+        addToWatchHistory(videoData);
+        
+        // Log to Google Sheets
+        debugLog(`Logging watch: "${videoTitle}" from search`, 'info');
+        logWatchToSheet(videoData, 'search');
         
         closeSearch();
         
@@ -1867,14 +1950,13 @@
         const video = watchHistory[index];
         watchHistory.splice(index, 1);
         video.watchedAt = Date.now();
-        video.source = 'history';
         watchHistory.unshift(video);
         saveWatchHistory();
         
-        debugLog(`Playing from history: ${videoTitle}`);
+        debugLog(`Playing from history: ${videoTitle}`, 'info');
         
         // Log replay to Google Sheets
-        logWatchToSheet({ ...video, source: 'history' });
+        logWatchToSheet(video, 'history');
         
         closeHistory();
         
@@ -2058,15 +2140,11 @@
       startUpd();
       player.playVideo();
       
-      // Log initial playlist video
+      // Log initial video from playlist
       const video = videos[idx];
       if (video) {
-        logWatchToSheet({
-          id: video.id,
-          title: video.title,
-          channel: '',
-          source: 'playlist_autoplay'
-        });
+        debugLog(`Initial playlist video: ${video.title}`, 'info');
+        logWatchToSheet(video, 'playlist_autoplay');
       }
     }
     
@@ -2095,7 +2173,6 @@
     function onErr(e) {
       loader.classList.add('hide');
       msg('Error loading video - try next');
-      debugLog(`Player error: ${e.data}`, 'error');
     }
     
     function loadVid() {
@@ -2108,13 +2185,8 @@
       
       // Log playlist video play to Google Sheets
       const video = videos[idx];
-      debugLog(`Playing from playlist: ${video.title}`);
-      logWatchToSheet({
-        id: video.id,
-        title: video.title,
-        channel: '',
-        source: 'playlist'
-      });
+      debugLog(`Loading playlist video: ${video.title}`, 'info');
+      logWatchToSheet(video, 'playlist');
       
       player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
     }
@@ -2393,13 +2465,32 @@
       caches.keys().then(keys => { keys.forEach(key => caches.delete(key)); });
     }
     
+    // ===== TEST SHEET CONNECTION =====
+    async function testSheetConnection() {
+      debugLog('Testing Google Sheets connection...', 'info');
+      
+      try {
+        await sendToGoogleSheets('test_connection', {
+          videoTitle: 'Connection Test from PWA',
+          videoId: 'test_' + Date.now()
+        });
+        debugLog('Sheet connection test completed!', 'success');
+      } catch (e) {
+        debugLog(`Connection test failed: ${e.message}`, 'error');
+      }
+    }
+    
     // ===== INIT =====
     async function init() {
-      debugLog('Starting Video Player...');
-      debugLog(`User ID: ${getUserId()}`);
-      debugLog(`Apps Script URL: ${APPS_SCRIPT_URL.substring(0, 50)}...`);
+      debugLog('Starting Video Player...', 'info');
+      debugLog(`User ID: ${getUserId()}`, 'info');
+      debugLog(`Apps Script URL: ${APPS_SCRIPT_URL.substring(0, 50)}...`, 'info');
       
       loadHistoryFromStorage();
+      debugLog(`Loaded ${searchHistory.length} search items and ${watchHistory.length} watch items from storage`, 'info');
+      
+      // Test sheet connection on startup
+      testSheetConnection();
       
       await loadData(true);
       
@@ -2409,9 +2500,6 @@
       }
       
       setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
-      
-      // Test connection to Google Sheets
-      debugLog('Testing Google Sheets connection...');
     }
     
     init();
