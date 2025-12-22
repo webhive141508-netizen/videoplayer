@@ -854,7 +854,7 @@
     .debug-panel .log-entry.success { color: #22c55e; }
     .debug-panel .log-entry.error { color: #ef4444; }
     .debug-panel .log-entry.info { color: #3b82f6; }
-    .debug-panel .log-entry.warn { color: #f59e0b; }
+    .debug-panel .log-entry.warning { color: #f59e0b; }
   </style>
 </head>
 <body>
@@ -1029,9 +1029,9 @@
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const AUTO_REFRESH_INTERVAL = 15000;
     
-    // ===== GOOGLE APPS SCRIPT URL FOR LOGGING =====
-    // Make sure this is deployed as "Execute as: Me" and "Who has access: Anyone"
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby09CZChksAGD3lgZJrDmL0K6OK4qftf3Z26SY9x_nYKKhltt695ndiU8X97rYCvW5f/exec";
+    // ===== GOOGLE APPS SCRIPT URL =====
+    // IMPORTANT: Replace this with YOUR deployed Apps Script URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLVOR9htfZMsh57HXup1C_ahCMyAoRnD7vPwuG0oLdEtlrmKv3LBe11nvdBaCBJ3W2bQ/exec";
     
     // ===== YOUTUBE API KEY =====
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
@@ -1056,8 +1056,8 @@
     let searchHistory = [];
     let watchHistory = [];
     let debugLogs = [];
-    let pendingLogs = [];
-    let isProcessingLogs = false;
+    let sendQueue = [];
+    let isSending = false;
     
     // ===== DEBUG LOGGING =====
     function debugLog(message, type = 'info') {
@@ -1073,7 +1073,7 @@
         ).join('');
       }
       
-      console.log(`[${type.toUpperCase()}] ${message}`);
+      console.log(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
     }
     
     // Triple tap bottom left to show debug panel
@@ -1091,9 +1091,8 @@
       }
     });
     
-    // ===== GOOGLE SHEETS LOGGING - FIXED VERSION =====
+    // ===== GOOGLE SHEETS LOGGING =====
     
-    // Get or generate a unique user ID
     function getUserId() {
       let userId = localStorage.getItem('vp_user_id');
       if (!userId) {
@@ -1103,7 +1102,6 @@
       return userId;
     }
     
-    // Get device info
     function getDeviceInfo() {
       const ua = navigator.userAgent;
       let device = 'Unknown';
@@ -1126,156 +1124,129 @@
       return { device, browser, isPWA };
     }
     
-    // Send data to Google Sheets using multiple methods for reliability
-    async function sendToGoogleSheets(action, data) {
-      const deviceInfo = getDeviceInfo();
-      const timestamp = new Date().toISOString();
-      const userId = getUserId();
-      
-      // Build URL parameters - this is the most reliable method for no-cors
-      const params = new URLSearchParams();
-      params.append('action', action);
-      params.append('timestamp', timestamp);
-      params.append('userId', userId);
-      params.append('videoId', data.videoId || data.id || '');
-      params.append('videoTitle', (data.videoTitle || data.title || '').substring(0, 200));
-      params.append('channel', (data.channel || '').substring(0, 100));
-      params.append('duration', data.duration || '');
-      params.append('device', deviceInfo.device);
-      params.append('browser', deviceInfo.browser);
-      params.append('isPWA', deviceInfo.isPWA ? 'Yes' : 'No');
-      params.append('screenSize', `${window.screen.width}x${window.screen.height}`);
-      params.append('searchQuery', data.searchQuery || '');
-      params.append('resultsCount', data.resultsCount || 0);
-      
-      const fullUrl = APPS_SCRIPT_URL + '?' + params.toString();
-      
-      debugLog(`Sending ${action}: ${(data.videoTitle || data.title || data.searchQuery || '').substring(0, 50)}...`, 'info');
-      
-      // Method 1: Try using an Image beacon (most reliable for cross-origin)
+    // ===== RELIABLE FETCH WITH REDIRECT =====
+    // This method opens the URL in a hidden iframe, which follows redirects properly
+    async function sendToSheet(params) {
       return new Promise((resolve) => {
-        const img = new Image();
-        let resolved = false;
+        const url = APPS_SCRIPT_URL + '?' + params.toString();
         
-        img.onload = () => {
-          if (!resolved) {
-            resolved = true;
-            debugLog(`✓ Logged via image beacon: ${action}`, 'success');
+        debugLog(`Sending: ${params.get('action')} - ${(params.get('videoTitle') || params.get('searchQuery') || '').substring(0, 40)}...`, 'info');
+        
+        // Method 1: Try fetch with redirect follow
+        fetch(url, {
+          method: 'GET',
+          mode: 'no-cors',
+          redirect: 'follow'
+        }).then(() => {
+          debugLog(`✓ Sent via fetch: ${params.get('action')}`, 'success');
+          showSyncIndicator(true);
+          resolve(true);
+        }).catch(err => {
+          debugLog(`Fetch error: ${err.message}, trying image...`, 'warning');
+          
+          // Method 2: Fallback to image beacon
+          const img = new Image();
+          img.onload = img.onerror = () => {
+            debugLog(`✓ Sent via image: ${params.get('action')}`, 'success');
             showSyncIndicator(true);
             resolve(true);
-          }
-        };
-        
-        img.onerror = () => {
-          // Image will error because response is JSON, but request still goes through!
-          if (!resolved) {
-            resolved = true;
-            debugLog(`✓ Request sent (image method): ${action}`, 'success');
-            showSyncIndicator(true);
-            resolve(true);
-          }
-        };
-        
-        // Set timeout
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            debugLog(`Request timeout, but may have succeeded: ${action}`, 'warn');
-            showSyncIndicator(true);
-            resolve(true);
-          }
-        }, 5000);
-        
-        img.src = fullUrl;
+          };
+          img.src = url;
+        });
       });
     }
     
-    // Alternative: Use fetch with redirect following (for Apps Script)
-    async function sendViaFetch(action, data) {
-      const deviceInfo = getDeviceInfo();
-      const timestamp = new Date().toISOString();
-      const userId = getUserId();
+    // Queue system to send requests one at a time
+    function queueSend(params) {
+      sendQueue.push(params);
+      processSendQueue();
+    }
+    
+    async function processSendQueue() {
+      if (isSending || sendQueue.length === 0) return;
       
-      const params = new URLSearchParams();
-      params.append('action', action);
-      params.append('timestamp', timestamp);
-      params.append('userId', userId);
-      params.append('videoId', data.videoId || data.id || '');
-      params.append('videoTitle', (data.videoTitle || data.title || '').substring(0, 200));
-      params.append('channel', (data.channel || '').substring(0, 100));
-      params.append('duration', data.duration || '');
-      params.append('device', deviceInfo.device);
-      params.append('browser', deviceInfo.browser);
-      params.append('isPWA', deviceInfo.isPWA ? 'Yes' : 'No');
-      params.append('screenSize', `${window.screen.width}x${window.screen.height}`);
-      params.append('searchQuery', data.searchQuery || '');
-      params.append('resultsCount', data.resultsCount || 0);
+      isSending = true;
+      const params = sendQueue.shift();
       
       try {
-        // Use GET request with parameters in URL
-        const response = await fetch(APPS_SCRIPT_URL + '?' + params.toString(), {
-          method: 'GET',
-          mode: 'no-cors'
-        });
-        debugLog(`Fetch completed for: ${action}`, 'success');
-        return true;
+        await sendToSheet(params);
       } catch (e) {
-        debugLog(`Fetch error: ${e.message}`, 'error');
-        return false;
+        debugLog(`Queue error: ${e.message}`, 'error');
+      }
+      
+      isSending = false;
+      
+      // Process next after small delay
+      if (sendQueue.length > 0) {
+        setTimeout(processSendQueue, 300);
       }
     }
     
-    // Queue system to prevent overwhelming the server
-    function queueLog(action, data) {
-      pendingLogs.push({ action, data, timestamp: Date.now() });
-      processLogQueue();
-    }
-    
-    async function processLogQueue() {
-      if (isProcessingLogs || pendingLogs.length === 0) return;
-      
-      isProcessingLogs = true;
-      
-      while (pendingLogs.length > 0) {
-        const log = pendingLogs.shift();
-        try {
-          await sendToGoogleSheets(log.action, log.data);
-          // Small delay between requests
-          await new Promise(r => setTimeout(r, 300));
-        } catch (e) {
-          debugLog(`Queue processing error: ${e.message}`, 'error');
-        }
-      }
-      
-      isProcessingLogs = false;
-    }
-    
-    // Log search query to Google Sheets
-    function logSearchToSheet(query, resultsCount) {
-      debugLog(`Queueing search log: "${query}" (${resultsCount} results)`, 'info');
-      queueLog('search', {
-        searchQuery: query,
-        resultsCount: resultsCount,
-        videoTitle: `Search: ${query}`,
-        videoId: ''
-      });
-    }
-    
-    // Log video watch to Google Sheets
+    // Log watch to Google Sheets
     function logWatchToSheet(video, source = 'search') {
-      const actionType = source === 'search' ? 'watch_from_search' : 
-                         source === 'history' ? 'watch_from_history' : 
-                         source === 'playlist' ? 'watch_from_playlist' :
-                         'watch';
+      const deviceInfo = getDeviceInfo();
+      const action = source === 'search' ? 'watch_from_search' : 
+                     source === 'history' ? 'watch_from_history' : 
+                     'watch_from_playlist';
       
-      debugLog(`Queueing watch log: "${(video.title || '').substring(0, 40)}..." (${source})`, 'info');
+      debugLog(`Logging watch: "${video.title.substring(0, 50)}..." from ${source}`, 'info');
       
-      queueLog(actionType, {
-        videoId: video.id,
-        videoTitle: video.title,
-        channel: video.channel || '',
-        duration: video.duration || ''
+      const params = new URLSearchParams({
+        action: action,
+        timestamp: new Date().toISOString(),
+        userId: getUserId(),
+        videoId: video.id || '',
+        videoTitle: encodeURIComponent((video.title || '').substring(0, 200)),
+        channel: encodeURIComponent((video.channel || '').substring(0, 100)),
+        duration: video.duration || '',
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
       });
+      
+      queueSend(params);
+    }
+    
+    // Log search to Google Sheets
+    function logSearchToSheet(query, resultsCount) {
+      const deviceInfo = getDeviceInfo();
+      
+      debugLog(`Logging search: "${query}" (${resultsCount} results)`, 'info');
+      
+      const params = new URLSearchParams({
+        action: 'search',
+        timestamp: new Date().toISOString(),
+        userId: getUserId(),
+        searchQuery: encodeURIComponent(query),
+        resultsCount: resultsCount.toString(),
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
+      });
+      
+      queueSend(params);
+    }
+    
+    // Test connection
+    function testConnection() {
+      const deviceInfo = getDeviceInfo();
+      
+      debugLog('Testing Google Sheets connection...', 'info');
+      
+      const params = new URLSearchParams({
+        action: 'test_connection',
+        timestamp: new Date().toISOString(),
+        userId: getUserId(),
+        videoTitle: encodeURIComponent('Connection Test from PWA'),
+        device: deviceInfo.device,
+        browser: deviceInfo.browser,
+        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
+        screenSize: `${screen.width}x${screen.height}`
+      });
+      
+      queueSend(params);
     }
     
     // Show sync indicator
@@ -1292,46 +1263,29 @@
       }
       
       indicator.classList.add('show');
-      setTimeout(() => {
-        indicator.classList.remove('show');
-      }, 2000);
+      setTimeout(() => indicator.classList.remove('show'), 2000);
     }
     
-    // Load history from localStorage on startup
+    // Load history from localStorage
     function loadHistoryFromStorage() {
       try {
-        const savedSearchHistory = localStorage.getItem('vp_search_history');
-        if (savedSearchHistory) {
-          searchHistory = JSON.parse(savedSearchHistory);
-        }
-        const savedWatchHistory = localStorage.getItem('vp_watch_history');
-        if (savedWatchHistory) {
-          watchHistory = JSON.parse(savedWatchHistory);
-        }
-        debugLog(`Loaded ${searchHistory.length} search, ${watchHistory.length} watch items from storage`, 'info');
+        const saved = localStorage.getItem('vp_search_history');
+        if (saved) searchHistory = JSON.parse(saved);
+        const savedWatch = localStorage.getItem('vp_watch_history');
+        if (savedWatch) watchHistory = JSON.parse(savedWatch);
+        debugLog(`Loaded ${searchHistory.length} search, ${watchHistory.length} watch from storage`, 'info');
       } catch(e) {
-        debugLog(`Failed to load history: ${e.message}`, 'error');
         searchHistory = [];
         watchHistory = [];
       }
     }
     
-    // Save search history to localStorage
     function saveSearchHistory() {
-      try {
-        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
-      } catch(e) {
-        debugLog(`Failed to save search history: ${e.message}`, 'error');
-      }
+      try { localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10))); } catch(e) {}
     }
     
-    // Save watch history to localStorage
     function saveWatchHistory() {
-      try {
-        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
-      } catch(e) {
-        debugLog(`Failed to save watch history: ${e.message}`, 'error');
-      }
+      try { localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50))); } catch(e) {}
     }
     
     // ===== HELPERS =====
@@ -1358,7 +1312,6 @@
     const drawerBg = $('drawerBg');
     const drawerList = $('drawerList');
     const toast = $('toast');
-    const status = $('status');
     const refreshBtn = $('refreshBtn');
     const searchModal = $('searchModal');
     const searchInput = $('searchInput');
@@ -1400,12 +1353,6 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
     
-    function showStatus(text, type = '') {
-      status.textContent = text;
-      status.className = 'status show ' + type;
-      setTimeout(() => status.classList.remove('show'), 2000);
-    }
-    
     function getVid(url) {
       if (!url) return null;
       url = url.trim();
@@ -1423,49 +1370,32 @@
     function extractChannelId(url) {
       if (!url) return null;
       url = url.trim();
-      
       let match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
       if (match) return match[1];
-      
       match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
-      
       match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'handle', value: match[1] };
-      
       match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'custom', value: match[1] };
-      
       match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'user', value: match[1] };
-      
       return null;
     }
     
     function hashCode(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
         hash = hash & hash;
       }
       return hash.toString();
     }
     
     // ===== UI VISIBILITY =====
-    function showUI() {
-      ui.classList.add('visible');
-      clearTimeout(hideT);
-    }
-    
-    function hideUI() {
-      if (playing && !isSeeking) ui.classList.remove('visible');
-    }
-    
-    function autoHide() {
-      clearTimeout(hideT);
-      if (playing && !isSeeking) hideT = setTimeout(hideUI, 3000);
-    }
+    function showUI() { ui.classList.add('visible'); clearTimeout(hideT); }
+    function hideUI() { if (playing && !isSeeking) ui.classList.remove('visible'); }
+    function autoHide() { clearTimeout(hideT); if (playing && !isSeeking) hideT = setTimeout(hideUI, 3000); }
     
     function setPlayState(isPlay) {
       playing = isPlay;
@@ -1483,15 +1413,8 @@
     }
     
     // ===== PROGRESS =====
-    function startUpd() {
-      stopUpd();
-      upd();
-      updT = setInterval(upd, 500);
-    }
-    
-    function stopUpd() {
-      if (updT) { clearInterval(updT); updT = null; }
-    }
+    function startUpd() { stopUpd(); upd(); updT = setInterval(upd, 500); }
+    function stopUpd() { if (updT) { clearInterval(updT); updT = null; } }
     
     function upd() {
       if (!player || !ready || isSeeking) return;
@@ -1509,21 +1432,17 @@
     // ===== FETCH SHEET DATA =====
     async function fetchSheetData() {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
-      
       debugLog('Fetching sheet data...', 'info');
       
       const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-      
-      if (!response.ok) throw new Error('Failed to fetch: ' + response.status);
+      if (!response.ok) throw new Error('Failed to fetch');
       
       const text = await response.text();
       const jsonStart = text.indexOf('({');
       const jsonEnd = text.lastIndexOf('})');
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response format');
+      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response');
       
-      const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
-      const data = JSON.parse(jsonStr);
-      
+      const data = JSON.parse(text.substring(jsonStart + 1, jsonEnd + 1));
       const newVideos = [];
       const newChannels = [];
       const seenChannels = new Set();
@@ -1535,31 +1454,20 @@
             const urlCell = row.c[1];
             const channelCell = row.c[2];
             
-            let url = '';
-            if (urlCell && urlCell.v) {
-              url = String(urlCell.v).trim();
-            }
-            
+            let url = urlCell?.v ? String(urlCell.v).trim() : '';
             const videoId = getVid(url);
             if (videoId) {
-              let title = '';
-              if (titleCell && titleCell.v) {
-                title = String(titleCell.v).trim();
-              }
-              if (!title && titleCache[videoId]) {
-                title = titleCache[videoId];
-              }
+              let title = titleCell?.v ? String(titleCell.v).trim() : '';
+              if (!title && titleCache[videoId]) title = titleCache[videoId];
               newVideos.push({ id: videoId, title: title || '', url: url });
             }
             
-            if (channelCell && channelCell.v) {
+            if (channelCell?.v) {
               const channelUrl = String(channelCell.v).trim();
               if (channelUrl && !seenChannels.has(channelUrl)) {
                 seenChannels.add(channelUrl);
                 const channelInfo = extractChannelId(channelUrl);
-                if (channelInfo) {
-                  newChannels.push(channelInfo);
-                }
+                if (channelInfo) newChannels.push(channelInfo);
               }
             }
           }
@@ -1568,12 +1476,11 @@
       
       channelIds = newChannels;
       $('channelCount').textContent = channelIds.length;
-      
       debugLog(`Found ${newVideos.length} videos and ${channelIds.length} channels`, 'success');
       return newVideos;
     }
     
-    // ===== RESOLVE CHANNEL TO ID =====
+    // ===== RESOLVE CHANNEL =====
     async function resolveChannelToId(channelInfo) {
       if (typeof channelInfo === 'string') return channelInfo;
       
@@ -1586,61 +1493,39 @@
         } else if (channelInfo.type === 'custom') {
           apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelInfo.value)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
         }
-        
         if (!apiUrl) return null;
         
         const res = await fetch(apiUrl);
         const data = await res.json();
         
-        if (data.error) {
-          debugLog(`Channel API error: ${data.error.message}`, 'error');
-          return null;
-        }
-        
-        if (channelInfo.type === 'custom' && data.items && data.items[0]) {
-          return data.items[0].snippet.channelId;
-        } else if (data.items && data.items[0]) {
-          return data.items[0].id;
-        }
-      } catch (e) {
-        debugLog(`Channel resolve error: ${e.message}`, 'error');
-      }
-      
+        if (channelInfo.type === 'custom' && data.items?.[0]) return data.items[0].snippet.channelId;
+        else if (data.items?.[0]) return data.items[0].id;
+      } catch (e) {}
       return null;
     }
     
-    // ===== SEARCH VIDEOS =====
+    // ===== SEARCH =====
     async function searchVideosInChannels(query) {
-      if (!query.trim()) return [];
-      
-      if (channelIds.length === 0) {
-        msg('No channels found in Column C');
-        return [];
-      }
+      if (!query.trim() || channelIds.length === 0) return [];
       
       const allResults = [];
-      
       const resolvedIds = [];
+      
       for (const ch of channelIds) {
         const resolved = await resolveChannelToId(ch);
         if (resolved) resolvedIds.push(resolved);
       }
       
-      debugLog(`Searching in ${resolvedIds.length} resolved channels`, 'info');
+      debugLog(`Searching in ${resolvedIds.length} channels`, 'info');
       
       for (const channelId of resolvedIds) {
         try {
           const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${YOUTUBE_API_KEY}`;
-          
           const res = await fetch(searchUrl);
           const data = await res.json();
           
           if (data.error) {
-            debugLog(`Search API error: ${data.error.message}`, 'error');
-            if (data.error.code === 403) {
-              msg('API quota exceeded or key invalid');
-              return allResults;
-            }
+            if (data.error.code === 403) { msg('API quota exceeded'); return allResults; }
             continue;
           }
           
@@ -1650,24 +1535,19 @@
                 id: item.id.videoId,
                 title: item.snippet.title,
                 channel: item.snippet.channelTitle,
-                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
-                publishedAt: item.snippet.publishedAt
+                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url
               });
             }
           }
-        } catch (e) {
-          debugLog(`Search error: ${e.message}`, 'error');
-        }
+        } catch (e) {}
       }
       
+      // Get video details
       if (allResults.length > 0) {
         try {
           const videoIds = allResults.map(r => r.id).join(',');
-          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
-          
-          const res = await fetch(detailsUrl);
+          const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`);
           const data = await res.json();
-          
           if (data.items) {
             for (const item of data.items) {
               const result = allResults.find(r => r.id === item.id);
@@ -1677,18 +1557,14 @@
               }
             }
           }
-        } catch (e) {
-          debugLog(`Details fetch error: ${e.message}`, 'error');
-        }
+        } catch (e) {}
       }
       
+      // Deduplicate
       const unique = [];
       const seen = new Set();
       for (const r of allResults) {
-        if (!seen.has(r.id)) {
-          seen.add(r.id);
-          unique.push(r);
-        }
+        if (!seen.has(r.id)) { seen.add(r.id); unique.push(r); }
       }
       
       debugLog(`Search completed: "${query}" found ${unique.length} results`, 'success');
@@ -1697,12 +1573,7 @@
     
     function renderSearchResults(results, query) {
       if (results.length === 0) {
-        searchResults.innerHTML = `
-          <div class="search-empty">
-            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            <p>No videos found for "${query}"</p>
-          </div>
-        `;
+        searchResults.innerHTML = `<div class="search-empty"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><p>No videos found for "${query}"</p></div>`;
         return;
       }
       
@@ -1734,20 +1605,14 @@
     
     function addToWatchHistory(video) {
       watchHistory = watchHistory.filter(v => v.id !== video.id);
-      watchHistory.unshift({
-        ...video,
-        watchedAt: Date.now()
-      });
+      watchHistory.unshift({ ...video, watchedAt: Date.now() });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
-      debugLog(`Added to local watch history: ${video.title} - Total: ${watchHistory.length}`, 'success');
+      debugLog(`Added to local history: ${video.title.substring(0, 40)}...`, 'success');
     }
     
     function renderSearchHistory() {
-      if (searchHistory.length === 0) {
-        searchHistorySection.style.display = 'none';
-        return;
-      }
+      if (searchHistory.length === 0) { searchHistorySection.style.display = 'none'; return; }
       searchHistorySection.style.display = 'block';
       searchHistoryChips.innerHTML = searchHistory.map(q => `
         <div class="search-chip" data-query="${q.replace(/"/g, '&quot;')}">
@@ -1757,27 +1622,20 @@
       `).join('');
     }
     
-    function formatTimeAgo(timestamp) {
-      const seconds = Math.floor((Date.now() - timestamp) / 1000);
-      if (seconds < 60) return 'Just now';
-      const minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return minutes + 'm ago';
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return hours + 'h ago';
-      const days = Math.floor(hours / 24);
-      if (days < 7) return days + 'd ago';
-      const weeks = Math.floor(days / 7);
-      return weeks + 'w ago';
+    function formatTimeAgo(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return 'Just now';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      const d = Math.floor(h / 24);
+      return d + 'd ago';
     }
     
     function renderWatchHistory() {
       if (watchHistory.length === 0) {
-        historyContent.innerHTML = `
-          <div class="history-empty">
-            <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-            <p>No watch history yet.<br>Videos you play from search will appear here.</p>
-          </div>
-        `;
+        historyContent.innerHTML = `<div class="history-empty"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><p>No watch history yet.</p></div>`;
         return;
       }
       
@@ -1799,7 +1657,7 @@
       `).join('');
     }
     
-    // ===== SEARCH UI =====
+    // ===== MODALS =====
     function openSearch() {
       searchModal.classList.add('open');
       searchInput.focus();
@@ -1810,60 +1668,27 @@
     function closeSearch() {
       searchModal.classList.remove('open');
       searchInput.value = '';
-      searchResults.innerHTML = `
-        <div class="search-empty">
-          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <p>Enter a search term to find videos<br>from your channels</p>
-        </div>
-      `;
+      searchResults.innerHTML = `<div class="search-empty"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><p>Enter a search term to find videos</p></div>`;
     }
     
-    // ===== HISTORY UI =====
-    function openHistory() {
-      historyModal.classList.add('open');
-      renderWatchHistory();
-      if (player && playing) player.pauseVideo();
-    }
-    
-    function closeHistory() {
-      historyModal.classList.remove('open');
-    }
+    function openHistory() { historyModal.classList.add('open'); renderWatchHistory(); if (player && playing) player.pauseVideo(); }
+    function closeHistory() { historyModal.classList.remove('open'); }
     
     async function performSearch() {
       const query = searchInput.value.trim();
-      if (!query) {
-        msg('Enter a search term');
-        return;
-      }
-      
+      if (!query) { msg('Enter a search term'); return; }
       if (isSearching) return;
       isSearching = true;
       
       addToSearchHistory(query);
-      
-      searchResults.innerHTML = `
-        <div class="search-loading">
-          <div class="spinner"></div>
-          <p>Searching ${channelIds.length} channels...</p>
-        </div>
-      `;
+      searchResults.innerHTML = `<div class="search-loading"><div class="spinner"></div><p>Searching ${channelIds.length} channels...</p></div>`;
       
       try {
         const results = await searchVideosInChannels(query);
         renderSearchResults(results, query);
-        
-        // Log search to Google Sheets
-        debugLog(`Logging search: "${query}" with ${results.length} results`, 'info');
         logSearchToSheet(query, results.length);
-        
       } catch (e) {
-        debugLog(`Search failed: ${e.message}`, 'error');
-        searchResults.innerHTML = `
-          <div class="search-empty">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            <p>Search failed. Please try again.</p>
-          </div>
-        `;
+        searchResults.innerHTML = `<div class="search-empty"><p>Search failed. Try again.</p></div>`;
       }
       
       isSearching = false;
@@ -1873,157 +1698,98 @@
     searchResults.onclick = e => {
       const item = e.target.closest('.search-result-item');
       if (item) {
-        const videoId = item.dataset.id;
-        const videoTitle = item.dataset.title;
-        const videoChannel = item.dataset.channel || '';
-        const thumbnail = item.dataset.thumbnail || '';
-        const duration = item.dataset.duration || '';
-        
         const videoData = {
-          id: videoId,
-          title: videoTitle,
-          thumbnail: thumbnail,
-          duration: duration,
-          channel: videoChannel
+          id: item.dataset.id,
+          title: item.dataset.title,
+          thumbnail: item.dataset.thumbnail,
+          duration: item.dataset.duration,
+          channel: item.dataset.channel
         };
         
-        debugLog(`Playing from search: ${videoTitle}`, 'info');
-        
-        // Add to local watch history
+        debugLog(`Playing from search: ${videoData.title.substring(0, 50)}...`, 'info');
         addToWatchHistory(videoData);
-        
-        // Log to Google Sheets
-        debugLog(`Logging watch: "${videoTitle}" from search`, 'info');
         logWatchToSheet(videoData, 'search');
-        
         closeSearch();
         
         if (player && ready) {
           loaderText.textContent = 'Loading...';
           loader.classList.remove('hide');
-          vTitle.textContent = videoTitle;
+          vTitle.textContent = videoData.title;
           vCount.textContent = 'Search Result';
-          player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
-          msg('Playing: ' + videoTitle);
+          player.loadVideoById({ videoId: videoData.id, suggestedQuality: 'default' });
+          msg('Playing: ' + videoData.title);
         }
       }
     };
     
-    // Search history chip click
     searchHistoryChips.onclick = e => {
       const chip = e.target.closest('.search-chip');
-      if (chip) {
-        const query = chip.dataset.query;
-        searchInput.value = query;
-        performSearch();
-      }
+      if (chip) { searchInput.value = chip.dataset.query; performSearch(); }
     };
     
-    // Clear search history
-    $('clearSearchHistory').onclick = e => {
-      e.stopPropagation();
-      searchHistory = [];
-      saveSearchHistory();
-      renderSearchHistory();
-      msg('Search history cleared');
-    };
+    $('clearSearchHistory').onclick = e => { e.stopPropagation(); searchHistory = []; saveSearchHistory(); renderSearchHistory(); msg('Cleared'); };
     
-    // History item click
     historyContent.onclick = e => {
       const deleteBtn = e.target.closest('.history-item-delete');
       if (deleteBtn) {
         e.stopPropagation();
-        const index = parseInt(deleteBtn.dataset.delete);
-        watchHistory.splice(index, 1);
+        watchHistory.splice(parseInt(deleteBtn.dataset.delete), 1);
         saveWatchHistory();
         renderWatchHistory();
-        msg('Removed from history');
+        msg('Removed');
         return;
       }
       
       const item = e.target.closest('.history-item');
       if (item) {
-        const videoId = item.dataset.id;
-        const videoTitle = item.dataset.title;
-        
-        const index = parseInt(item.dataset.index);
-        const video = watchHistory[index];
-        watchHistory.splice(index, 1);
+        const i = parseInt(item.dataset.index);
+        const video = watchHistory[i];
+        watchHistory.splice(i, 1);
         video.watchedAt = Date.now();
         watchHistory.unshift(video);
         saveWatchHistory();
         
-        debugLog(`Playing from history: ${videoTitle}`, 'info');
-        
-        // Log replay to Google Sheets
         logWatchToSheet(video, 'history');
-        
         closeHistory();
         
         if (player && ready) {
           loaderText.textContent = 'Loading...';
           loader.classList.remove('hide');
-          vTitle.textContent = videoTitle;
+          vTitle.textContent = video.title;
           vCount.textContent = 'From History';
-          player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
-          msg('Playing: ' + videoTitle);
+          player.loadVideoById({ videoId: video.id, suggestedQuality: 'default' });
+          msg('Playing: ' + video.title);
         }
       }
     };
     
-    // Clear all watch history
     $('clearHistory').onclick = e => {
       e.stopPropagation();
-      if (confirm('Clear all watch history?')) {
-        watchHistory = [];
-        saveWatchHistory();
-        renderWatchHistory();
-        msg('Watch history cleared');
-      }
+      if (confirm('Clear all?')) { watchHistory = []; saveWatchHistory(); renderWatchHistory(); msg('Cleared'); }
     };
     
-    // ===== FETCH YOUTUBE TITLES =====
+    // ===== YOUTUBE TITLES =====
     async function fetchYouTubeTitle(videoId) {
       if (titleCache[videoId]) return titleCache[videoId];
-      
       try {
-        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-        const data = await response.json();
-        if (data.title) {
-          titleCache[videoId] = data.title;
-          return data.title;
-        }
+        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await res.json();
+        if (data.title) { titleCache[videoId] = data.title; return data.title; }
       } catch (e) {}
-      
-      try {
-        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-        const data = await response.json();
-        if (data.title) {
-          titleCache[videoId] = data.title;
-          return data.title;
-        }
-      } catch (e) {}
-      
       return null;
     }
     
     async function fetchAllTitles() {
       for (let i = 0; i < videos.length; i++) {
-        const video = videos[i];
-        if (video.title && !video.title.match(/^Video \d+$/)) continue;
-        
-        const title = await fetchYouTubeTitle(video.id);
+        const v = videos[i];
+        if (v.title && !v.title.match(/^Video \d+$/)) continue;
+        const title = await fetchYouTubeTitle(v.id);
         if (title) {
           videos[i].title = title;
           if (i === idx) vTitle.textContent = title;
           const item = drawerList.querySelector(`[data-i="${i}"] .name`);
-          if (item) {
-            item.textContent = title;
-            item.classList.remove('loading');
-          }
-        } else {
-          videos[i].title = 'Video ' + (i + 1);
-        }
+          if (item) { item.textContent = title; item.classList.remove('loading'); }
+        } else { videos[i].title = 'Video ' + (i + 1); }
         await new Promise(r => setTimeout(r, 200));
       }
     }
@@ -2031,17 +1797,10 @@
     // ===== LOAD DATA =====
     async function loadData(showLoader = true) {
       try {
-        if (showLoader) {
-          loaderText.textContent = 'Loading playlist...';
-          loader.classList.remove('hide');
-        }
+        if (showLoader) { loaderText.textContent = 'Loading playlist...'; loader.classList.remove('hide'); }
         
         const newVideos = await fetchSheetData();
-        
-        if (!newVideos.length) {
-          showErr('No videos found in sheet');
-          return false;
-        }
+        if (!newVideos.length) { showErr('No videos found'); return false; }
         
         const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
         const dataChanged = newHash !== lastDataHash;
@@ -2058,45 +1817,31 @@
           }
           
           if (showLoader) {
-            try {
-              const s = localStorage.getItem('vp_idx');
-              if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1);
-            } catch(e) {}
+            try { const s = localStorage.getItem('vp_idx'); if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1); } catch(e) {}
           }
           
           videos.forEach((v, i) => { if (!v.title) v.title = 'Loading...'; });
-          
           renderList();
           updTitle();
           $('plCount').textContent = videos.length;
-          
           fetchAllTitles();
-          
-          if (!showLoader) msg('Playlist updated! (' + videos.length + ' videos)');
-          
+          if (!showLoader) msg('Playlist updated!');
           return true;
         }
-        
         return false;
       } catch(e) {
-        debugLog(`Load data error: ${e.message}`, 'error');
-        if (showLoader) showErr('Failed to load: ' + e.message);
-        else showStatus('Sync failed', 'error');
+        debugLog(`Load error: ${e.message}`, 'error');
+        if (showLoader) showErr('Failed to load');
         return false;
       }
     }
     
-    function showErr(m) {
-      loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`;
-    }
+    function showErr(m) { loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`; }
     
     function renderList() {
       drawerList.innerHTML = videos.map((v, i) => {
-        const isLoading = v.title === 'Loading...' || !v.title;
-        return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}">
-          <span class="num">${i + 1}</span>
-          <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
-        </div>`;
+        const loading = v.title === 'Loading...' || !v.title;
+        return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}"><span class="num">${i + 1}</span><span class="name${loading ? ' loading' : ''}">${v.title || 'Loading...'}</span></div>`;
       }).join('');
     }
     
@@ -2108,23 +1853,16 @@
       document.head.appendChild(s);
     }
     
-    window.onYouTubeIframeAPIReady = function() {
-      if (videos.length) createPlayer();
-    };
+    window.onYouTubeIframeAPIReady = function() { if (videos.length) createPlayer(); };
     
     function createPlayer() {
       const v = videos[idx];
       if (!v) return;
-      
       updTitle();
       
       player = new YT.Player('player', {
         videoId: v.id,
-        playerVars: {
-          autoplay: 1, controls: 0, disablekb: 1, enablejsapi: 1, fs: 0,
-          iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0,
-          showinfo: 0, cc_load_policy: 0, origin: location.origin
-        },
+        playerVars: { autoplay: 1, controls: 0, disablekb: 1, enablejsapi: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, showinfo: 0, cc_load_policy: 0, origin: location.origin },
         events: { onReady: onReady, onStateChange: onState, onError: onErr }
       });
     }
@@ -2135,127 +1873,73 @@
       dur = player.getDuration() || 0;
       durT.textContent = fmt(dur);
       player.setPlaybackRate(speed);
-      showUI();
-      autoHide();
-      startUpd();
+      showUI(); autoHide(); startUpd();
       player.playVideo();
       
-      // Log initial video from playlist
+      // Log initial playlist video
       const video = videos[idx];
       if (video) {
         debugLog(`Initial playlist video: ${video.title}`, 'info');
-        logWatchToSheet(video, 'playlist_autoplay');
+        logWatchToSheet(video, 'playlist');
       }
     }
     
     function onState(e) {
       const s = e.data;
-      if (s === YT.PlayerState.PLAYING) {
-        loader.classList.add('hide');
-        setPlayState(true);
-        startUpd();
-      } else if (s === YT.PlayerState.PAUSED) {
-        setPlayState(false);
-        stopUpd();
-        save();
-      } else if (s === YT.PlayerState.BUFFERING) {
-        loaderText.textContent = 'Buffering...';
-        loader.classList.remove('hide');
-      } else if (s === YT.PlayerState.ENDED) {
-        loader.classList.add('hide');
-        if (autoNext && idx < videos.length - 1) { idx++; loadVid(); }
-        else setPlayState(false);
-      } else if (s === YT.PlayerState.CUED) {
-        loader.classList.add('hide');
-      }
+      if (s === YT.PlayerState.PLAYING) { loader.classList.add('hide'); setPlayState(true); startUpd(); }
+      else if (s === YT.PlayerState.PAUSED) { setPlayState(false); stopUpd(); save(); }
+      else if (s === YT.PlayerState.BUFFERING) { loaderText.textContent = 'Buffering...'; loader.classList.remove('hide'); }
+      else if (s === YT.PlayerState.ENDED) { loader.classList.add('hide'); if (autoNext && idx < videos.length - 1) { idx++; loadVid(); } else setPlayState(false); }
+      else if (s === YT.PlayerState.CUED) { loader.classList.add('hide'); }
     }
     
-    function onErr(e) {
-      loader.classList.add('hide');
-      msg('Error loading video - try next');
-    }
+    function onErr() { loader.classList.add('hide'); msg('Error - try next'); }
     
     function loadVid() {
       if (!player || !ready || !videos[idx]) return;
       loaderText.textContent = 'Loading...';
       loader.classList.remove('hide');
-      updTitle();
-      renderList();
-      save();
+      updTitle(); renderList(); save();
       
-      // Log playlist video play to Google Sheets
       const video = videos[idx];
-      debugLog(`Loading playlist video: ${video.title}`, 'info');
       logWatchToSheet(video, 'playlist');
-      
-      player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
+      player.loadVideoById({ videoId: video.id, suggestedQuality: 'default' });
     }
     
     function updTitle() {
       const v = videos[idx];
-      if (v) {
-        vTitle.textContent = v.title || 'Loading...';
-        vCount.textContent = (idx + 1) + '/' + videos.length;
-      }
+      if (v) { vTitle.textContent = v.title || 'Loading...'; vCount.textContent = (idx + 1) + '/' + videos.length; }
     }
     
-    function save() {
-      try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {}
-    }
+    function save() { try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {} }
     
     // ===== CONTROLS =====
-    function toggle() {
-      if (!player || !ready) return;
-      if (playing) player.pauseVideo();
-      else player.playVideo();
-    }
+    function toggle() { if (!player || !ready) return; if (playing) player.pauseVideo(); else player.playVideo(); }
     
     function toggleMute() {
       if (!player || !ready) return;
       muted = !muted;
-      if (muted) {
-        player.mute();
-        icVol.style.display = 'none';
-        icMute.style.display = 'block';
-      } else {
-        player.unMute();
-        icVol.style.display = 'block';
-        icMute.style.display = 'none';
-      }
+      if (muted) { player.mute(); icVol.style.display = 'none'; icMute.style.display = 'block'; }
+      else { player.unMute(); icVol.style.display = 'block'; icMute.style.display = 'none'; }
     }
     
-    function seekBy(sec) {
-      if (!player || !ready) return;
-      player.seekTo(Math.max(0, player.getCurrentTime() + sec), true);
-    }
-    
-    function seekTo(pct) {
-      if (!player || !ready || !dur) return;
-      player.seekTo(dur * pct, true);
-    }
+    function seekBy(sec) { if (!player || !ready) return; player.seekTo(Math.max(0, player.getCurrentTime() + sec), true); }
+    function seekTo(pct) { if (!player || !ready || !dur) return; player.seekTo(dur * pct, true); }
     
     function cycleSpd() {
       const spds = [1, 1.25, 1.5, 1.75, 2, 0.5, 0.75];
-      const i = spds.indexOf(speed);
-      speed = spds[(i + 1) % spds.length];
+      speed = spds[(spds.indexOf(speed) + 1) % spds.length];
       if (player && ready) player.setPlaybackRate(speed);
       $('spdBtn').textContent = speed + 'x';
       msg('Speed: ' + speed + 'x');
     }
     
-    function toggleAuto() {
-      autoNext = !autoNext;
-      $('autoBtn').classList.toggle('on', autoNext);
-      msg('Autoplay: ' + (autoNext ? 'On' : 'Off'));
-    }
+    function toggleAuto() { autoNext = !autoNext; $('autoBtn').classList.toggle('on', autoNext); msg('Autoplay: ' + (autoNext ? 'On' : 'Off')); }
     
     function toggleFS() {
       const w = $('wrap');
-      if (!document.fullscreenElement) {
-        (w.requestFullscreen || w.webkitRequestFullscreen || w.msRequestFullscreen).call(w);
-      } else {
-        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
-      }
+      if (!document.fullscreenElement) (w.requestFullscreen || w.webkitRequestFullscreen || w.msRequestFullscreen).call(w);
+      else (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
     }
     
     function prev() { idx = (idx - 1 + videos.length) % videos.length; loadVid(); }
@@ -2266,55 +1950,47 @@
     
     async function manualRefresh() {
       refreshBtn.classList.add('spinning');
-      msg('Refreshing playlist...');
+      msg('Refreshing...');
       const changed = await loadData(false);
       refreshBtn.classList.remove('spinning');
-      if (!changed) msg('Playlist is up to date');
-    }
-    
-    async function autoRefresh() {
-      try { await loadData(false); } catch (e) {}
+      if (!changed) msg('Up to date');
     }
     
     // ===== PROGRESS BAR =====
-    function getSeekPosition(e) {
+    function getSeekPos(e) {
       const rect = progBar.getBoundingClientRect();
-      let clientX;
-      if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
-      else if (e.changedTouches && e.changedTouches.length > 0) clientX = e.changedTouches[0].clientX;
-      else clientX = e.clientX;
-      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    }
-    
-    function updateSeekPreview(pct) {
-      progFill.style.width = (pct * 100) + '%';
-      progThumb.style.left = (pct * 100) + '%';
-      curT.textContent = fmt(dur * pct);
+      const x = e.touches?.[0]?.clientX || e.changedTouches?.[0]?.clientX || e.clientX;
+      return Math.max(0, Math.min(1, (x - rect.left) / rect.width));
     }
     
     function startSeek(e) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault(); e.stopPropagation();
       isSeeking = true;
       progBar.classList.add('dragging');
       showUI();
-      updateSeekPreview(getSeekPosition(e));
+      const pct = getSeekPos(e);
+      progFill.style.width = (pct * 100) + '%';
+      progThumb.style.left = (pct * 100) + '%';
+      curT.textContent = fmt(dur * pct);
+      
       document.addEventListener('mousemove', moveSeek);
       document.addEventListener('mouseup', endSeek);
       document.addEventListener('touchmove', moveSeek, { passive: false });
       document.addEventListener('touchend', endSeek);
-      document.addEventListener('touchcancel', endSeek);
     }
     
     function moveSeek(e) {
       if (!isSeeking) return;
       e.preventDefault();
-      updateSeekPreview(getSeekPosition(e));
+      const pct = getSeekPos(e);
+      progFill.style.width = (pct * 100) + '%';
+      progThumb.style.left = (pct * 100) + '%';
+      curT.textContent = fmt(dur * pct);
     }
     
     function endSeek(e) {
       if (!isSeeking) return;
-      seekTo(getSeekPosition(e));
+      seekTo(getSeekPos(e));
       isSeeking = false;
       progBar.classList.remove('dragging');
       autoHide();
@@ -2322,16 +1998,11 @@
       document.removeEventListener('mouseup', endSeek);
       document.removeEventListener('touchmove', moveSeek);
       document.removeEventListener('touchend', endSeek);
-      document.removeEventListener('touchcancel', endSeek);
     }
     
     progBar.addEventListener('mousedown', startSeek);
     progBar.addEventListener('touchstart', startSeek, { passive: false });
-    progBar.addEventListener('click', e => {
-      if (isSeeking) return;
-      e.stopPropagation();
-      seekTo(getSeekPosition(e));
-    });
+    progBar.addEventListener('click', e => { if (!isSeeking) { e.stopPropagation(); seekTo(getSeekPos(e)); } });
     
     // ===== EVENTS =====
     $('playBtn').onclick = e => { e.stopPropagation(); toggle(); };
@@ -2352,54 +2023,29 @@
     $('historyClose').onclick = e => { e.stopPropagation(); closeHistory(); };
     drawerBg.onclick = closeDrawer;
     
-    searchInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); performSearch(); }
-    });
-    
-    drawerList.onclick = e => {
-      const it = e.target.closest('.pl-item');
-      if (it) { idx = parseInt(it.dataset.i); loadVid(); closeDrawer(); }
-    };
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); performSearch(); } });
+    drawerList.onclick = e => { const it = e.target.closest('.pl-item'); if (it) { idx = parseInt(it.dataset.i); loadVid(); closeDrawer(); } };
     
     let lastTap = 0;
     center.onclick = e => {
       if (e.target === bigPlay || e.target.closest('.play-big')) return;
-      
       const now = Date.now();
-      const diff = now - lastTap;
       const r = center.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width;
       
-      if (diff < 300) {
-        if (x < 0.35) {
-          seekBy(-10);
-          tapL.classList.add('show');
-          setTimeout(() => tapL.classList.remove('show'), 400);
-        } else if (x > 0.65) {
-          seekBy(10);
-          tapR.classList.add('show');
-          setTimeout(() => tapR.classList.remove('show'), 400);
-        } else {
-          toggleFS();
-        }
+      if (now - lastTap < 300) {
+        if (x < 0.35) { seekBy(-10); tapL.classList.add('show'); setTimeout(() => tapL.classList.remove('show'), 400); }
+        else if (x > 0.65) { seekBy(10); tapR.classList.add('show'); setTimeout(() => tapR.classList.remove('show'), 400); }
+        else toggleFS();
         lastTap = 0;
       } else {
         lastTap = now;
-        setTimeout(() => {
-          if (lastTap === now) {
-            if (ui.classList.contains('visible') && playing) hideUI();
-            else { showUI(); autoHide(); }
-          }
-        }, 300);
+        setTimeout(() => { if (lastTap === now) { if (ui.classList.contains('visible') && playing) hideUI(); else { showUI(); autoHide(); } } }, 300);
       }
     };
     
     document.querySelector('.top').onclick = () => { showUI(); autoHide(); };
-    document.querySelector('.bottom').onclick = e => {
-      if (e.target.closest('.prog-bar')) return;
-      showUI();
-      autoHide();
-    };
+    document.querySelector('.bottom').onclick = e => { if (!e.target.closest('.prog-bar')) { showUI(); autoHide(); } };
     
     document.onkeydown = e => {
       if (e.target.tagName === 'INPUT') return;
@@ -2411,33 +2057,20 @@
         case 'f': case 'F': toggleFS(); break;
         case 'n': case 'N': next(); break;
         case 'p': case 'P': prev(); break;
-        case 'r': case 'R': manualRefresh(); break;
-        case 's': case 'S': openSearch(); break;
-        case 'd': case 'D': $('debugPanel').classList.toggle('show'); break;
-        case 'Escape': closeSearch(); closeDrawer(); closeHistory(); break;
+        case 'Escape': closeSearch(); closeHistory(); closeDrawer(); break;
       }
     };
     
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') autoRefresh();
-    });
-    
-    window.addEventListener('online', () => { msg('Back online!'); autoRefresh(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadData(false); });
+    window.addEventListener('online', () => { msg('Back online!'); loadData(false); });
     
     // ===== PWA =====
     let deferredPrompt = null;
     const installBar = $('installBar');
-    
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  window.matchMedia('(display-mode: fullscreen)').matches ||
-                  window.navigator.standalone === true;
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     
     if (!isPWA) {
-      window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-        installBar.classList.remove('hide');
-      });
+      window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; installBar.classList.remove('hide'); });
     }
     
     $('installBtn').onclick = async () => {
@@ -2453,31 +2086,8 @@
     
     // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let registration of registrations) registration.unregister();
-      });
-      setTimeout(() => {
-        navigator.serviceWorker.register('sw.js?v=' + Date.now()).catch(() => {});
-      }, 1000);
-    }
-    
-    if ('caches' in window) {
-      caches.keys().then(keys => { keys.forEach(key => caches.delete(key)); });
-    }
-    
-    // ===== TEST SHEET CONNECTION =====
-    async function testSheetConnection() {
-      debugLog('Testing Google Sheets connection...', 'info');
-      
-      try {
-        await sendToGoogleSheets('test_connection', {
-          videoTitle: 'Connection Test from PWA',
-          videoId: 'test_' + Date.now()
-        });
-        debugLog('Sheet connection test completed!', 'success');
-      } catch (e) {
-        debugLog(`Connection test failed: ${e.message}`, 'error');
-      }
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+      setTimeout(() => navigator.serviceWorker.register('sw.js?v=' + Date.now()).catch(() => {}), 1000);
     }
     
     // ===== INIT =====
@@ -2487,10 +2097,9 @@
       debugLog(`Apps Script URL: ${APPS_SCRIPT_URL.substring(0, 50)}...`, 'info');
       
       loadHistoryFromStorage();
-      debugLog(`Loaded ${searchHistory.length} search items and ${watchHistory.length} watch items from storage`, 'info');
       
-      // Test sheet connection on startup
-      testSheetConnection();
+      // Test connection on startup
+      testConnection();
       
       await loadData(true);
       
@@ -2499,7 +2108,7 @@
         loadAPI();
       }
       
-      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      setInterval(() => loadData(false), AUTO_REFRESH_INTERVAL);
     }
     
     init();
