@@ -1,6 +1,6 @@
 // Service Worker with Push Notifications for New Videos
 const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-const CHECK_INTERVAL = 60000; // Check every 60 seconds when active
+const CHECK_INTERVAL = 10000; // Check every 60 seconds when active
 
 // Store for tracking videos
 let lastKnownVideos = [];
