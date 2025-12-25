@@ -107,6 +107,11 @@
     .nav-btn.search-btn { background: rgba(59, 130, 246, 0.3); }
     .nav-btn.search-btn:active { background: rgba(59, 130, 246, 0.5); }
     
+    .nav-btn.notif-btn { background: rgba(251, 191, 36, 0.3); }
+    .nav-btn.notif-btn:active { background: rgba(251, 191, 36, 0.5); }
+    .nav-btn.notif-btn.enabled { background: rgba(34, 197, 94, 0.5); }
+    .nav-btn.notif-btn.denied { background: rgba(239, 68, 68, 0.3); }
+    
     .info {
       flex: 1;
       text-align: center;
@@ -317,12 +322,14 @@
     }
     .pl-item:active { background: #222; }
     .pl-item.active { background: #1a365d; border-left: 3px solid #3b82f6; }
+    .pl-item.new { background: rgba(34, 197, 94, 0.2); border-left: 3px solid #22c55e; }
     .pl-item .num {
       font-size: 12px;
       font-weight: 600;
       color: #3b82f6;
       min-width: 22px;
     }
+    .pl-item.new .num { color: #22c55e; }
     .pl-item .name {
       flex: 1;
       font-size: 12px;
@@ -333,6 +340,14 @@
     .pl-item .name.loading {
       color: #666;
       font-style: italic;
+    }
+    .pl-item .new-badge {
+      background: #22c55e;
+      color: #000;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
     }
     
     /* Search Modal */
@@ -627,6 +642,50 @@
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
+    /* Notification Permission Bar */
+    .notif-bar {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      padding: 10px 16px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 499;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+      max-width: 95%;
+    }
+    .notif-bar.hide { display: none; }
+    .notif-bar svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
+    .notif-bar span { color: #fff; font-size: 12px; font-weight: 500; }
+    .notif-bar .n-btn {
+      background: #fff;
+      color: #d97706;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .notif-bar .n-close {
+      background: rgba(255,255,255,0.25);
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .notif-bar .n-close svg { width: 12px; height: 12px; }
+    
     .status {
       position: fixed;
       top: 8px;
@@ -801,60 +860,62 @@
     .history-item:active .history-item-delete { opacity: 1; }
     .history-item-delete svg { width: 14px; height: 14px; fill: currentColor; }
     
-    /* Sync indicator */
-    .sync-indicator {
+    /* New video notification banner */
+    .new-video-banner {
       position: fixed;
-      top: 50px;
-      right: 8px;
-      background: rgba(34, 197, 94, 0.9);
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 11px;
-      color: white;
-      z-index: 1000;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      padding: 12px 20px;
+      border-radius: 30px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      opacity: 0;
-      transform: translateX(100%);
-      transition: all 0.3s ease;
+      gap: 12px;
+      z-index: 600;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.5);
+      transition: transform 0.3s ease;
+      max-width: 90%;
+      cursor: pointer;
     }
-    .sync-indicator.show {
-      opacity: 1;
-      transform: translateX(0);
+    .new-video-banner.show { transform: translateX(-50%) translateY(0); }
+    .new-video-banner svg { width: 24px; height: 24px; fill: #fff; flex-shrink: 0; }
+    .new-video-banner-text { flex: 1; min-width: 0; }
+    .new-video-banner-title { color: #fff; font-size: 12px; font-weight: 600; }
+    .new-video-banner-name { 
+      color: rgba(255,255,255,0.9); 
+      font-size: 11px; 
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
     }
-    .sync-indicator.error {
-      background: rgba(239, 68, 68, 0.9);
+    .new-video-banner .play-btn {
+      background: #fff;
+      color: #16a34a;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
-    .sync-indicator svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
+    .new-video-banner .play-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .new-video-banner .close-btn {
+      background: rgba(255,255,255,0.25);
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
     }
-    
-    /* Debug panel */
-    .debug-panel {
-      position: fixed;
-      bottom: 60px;
-      left: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.95);
-      border: 1px solid #333;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 10px;
-      color: #aaa;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-    .debug-panel.show { display: block; }
-    .debug-panel .log-entry { margin-bottom: 4px; padding: 2px 0; border-bottom: 1px solid #222; word-break: break-all; }
-    .debug-panel .log-entry.success { color: #22c55e; }
-    .debug-panel .log-entry.error { color: #ef4444; }
-    .debug-panel .log-entry.info { color: #3b82f6; }
-    .debug-panel .log-entry.warning { color: #f59e0b; }
+    .new-video-banner .close-btn svg { width: 14px; height: 14px; fill: #fff; }
   </style>
 </head>
 <body>
@@ -883,6 +944,9 @@
         </button>
         <button class="nav-btn history-btn" id="historyBtn" title="Watch History">
           <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        </button>
+        <button class="nav-btn notif-btn" id="notifBtn" title="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
         </button>
         <button class="nav-btn refresh-btn" id="refreshBtn" title="Refresh Playlist">
           <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
@@ -1000,19 +1064,20 @@
   <div class="toast" id="toast"></div>
   <div class="status" id="status"></div>
   
-  <!-- Sync Indicator -->
-  <div class="sync-indicator" id="syncIndicator">
-    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-    <span id="syncText">Synced to Sheet</span>
-  </div>
-  
-  <!-- Debug Panel (triple-tap bottom left to toggle) -->
-  <div class="debug-panel" id="debugPanel">
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-      <strong style="color:#fff;">Debug Log</strong>
-      <button onclick="document.getElementById('debugPanel').classList.remove('show')" style="background:none;border:none;color:#888;cursor:pointer;">✕</button>
+  <!-- New Video Banner -->
+  <div class="new-video-banner" id="newVideoBanner">
+    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    <div class="new-video-banner-text">
+      <div class="new-video-banner-title">New Video Added!</div>
+      <div class="new-video-banner-name" id="newVideoName">Video Title</div>
     </div>
-    <div id="debugLog"></div>
+    <button class="play-btn" id="playNewVideo">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      Play
+    </button>
+    <button class="close-btn" id="closeNewBanner">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
   </div>
   
   <div class="install-bar hide" id="installBar">
@@ -1023,15 +1088,21 @@
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
   </div>
+  
+  <!-- Notification Permission Bar -->
+  <div class="notif-bar hide" id="notifBar">
+    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    <span>Get notified when new videos are added</span>
+    <button class="n-btn" id="enableNotif">Enable</button>
+    <button class="n-close" id="closeNotifBar">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  </div>
 
   <script>
     // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const AUTO_REFRESH_INTERVAL = 15000;
-    
-    // ===== GOOGLE APPS SCRIPT URL =====
-    // IMPORTANT: Replace this with YOUR deployed Apps Script URL
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2hdovFmuZIvMVmGgNIb-QMpDJWQZgCsNrnQ89Et9HKO1UhkJE5kZHsFPFWM9PVGYzZw/exec";
     
     // ===== YOUTUBE API KEY =====
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
@@ -1055,237 +1126,60 @@
     let isSearching = false;
     let searchHistory = [];
     let watchHistory = [];
-    let debugLogs = [];
-    let sendQueue = [];
-    let isSending = false;
+    let knownVideoIds = new Set();
+    let notificationsEnabled = false;
+    let newVideoQueue = [];
+    let swRegistration = null;
     
-    // ===== DEBUG LOGGING =====
-    function debugLog(message, type = 'info') {
-      const timestamp = new Date().toLocaleTimeString();
-      const entry = { time: timestamp, message, type };
-      debugLogs.unshift(entry);
-      if (debugLogs.length > 100) debugLogs.pop();
-      
-      const logDiv = document.getElementById('debugLog');
-      if (logDiv) {
-        logDiv.innerHTML = debugLogs.map(e => 
-          `<div class="log-entry ${e.type}">[${e.time}] ${e.message}</div>`
-        ).join('');
-      }
-      
-      console.log(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
-    }
-    
-    // Triple tap bottom left to show debug panel
-    let debugTapCount = 0;
-    let debugTapTimer = null;
-    document.addEventListener('click', (e) => {
-      if (e.clientX < 100 && e.clientY > window.innerHeight - 100) {
-        debugTapCount++;
-        clearTimeout(debugTapTimer);
-        debugTapTimer = setTimeout(() => { debugTapCount = 0; }, 500);
-        if (debugTapCount >= 3) {
-          document.getElementById('debugPanel').classList.toggle('show');
-          debugTapCount = 0;
-        }
-      }
-    });
-    
-    // ===== GOOGLE SHEETS LOGGING =====
-    
-    function getUserId() {
-      let userId = localStorage.getItem('vp_user_id');
-      if (!userId) {
-        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('vp_user_id', userId);
-      }
-      return userId;
-    }
-    
-    function getDeviceInfo() {
-      const ua = navigator.userAgent;
-      let device = 'Unknown';
-      let browser = 'Unknown';
-      
-      if (/Android/i.test(ua)) device = 'Android';
-      else if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS';
-      else if (/Windows/i.test(ua)) device = 'Windows';
-      else if (/Mac/i.test(ua)) device = 'Mac';
-      else if (/Linux/i.test(ua)) device = 'Linux';
-      
-      if (/Chrome/i.test(ua) && !/Edge|Edg/i.test(ua)) browser = 'Chrome';
-      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
-      else if (/Firefox/i.test(ua)) browser = 'Firefox';
-      else if (/Edge|Edg/i.test(ua)) browser = 'Edge';
-      
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                    window.navigator.standalone === true;
-      
-      return { device, browser, isPWA };
-    }
-    
-    // ===== RELIABLE FETCH WITH REDIRECT =====
-    // This method opens the URL in a hidden iframe, which follows redirects properly
-    async function sendToSheet(params) {
-      return new Promise((resolve) => {
-        const url = APPS_SCRIPT_URL + '?' + params.toString();
-        
-        debugLog(`Sending: ${params.get('action')} - ${(params.get('videoTitle') || params.get('searchQuery') || '').substring(0, 40)}...`, 'info');
-        
-        // Method 1: Try fetch with redirect follow
-        fetch(url, {
-          method: 'GET',
-          mode: 'no-cors',
-          redirect: 'follow'
-        }).then(() => {
-          debugLog(`✓ Sent via fetch: ${params.get('action')}`, 'success');
-          showSyncIndicator(true);
-          resolve(true);
-        }).catch(err => {
-          debugLog(`Fetch error: ${err.message}, trying image...`, 'warning');
-          
-          // Method 2: Fallback to image beacon
-          const img = new Image();
-          img.onload = img.onerror = () => {
-            debugLog(`✓ Sent via image: ${params.get('action')}`, 'success');
-            showSyncIndicator(true);
-            resolve(true);
-          };
-          img.src = url;
-        });
-      });
-    }
-    
-    // Queue system to send requests one at a time
-    function queueSend(params) {
-      sendQueue.push(params);
-      processSendQueue();
-    }
-    
-    async function processSendQueue() {
-      if (isSending || sendQueue.length === 0) return;
-      
-      isSending = true;
-      const params = sendQueue.shift();
-      
-      try {
-        await sendToSheet(params);
-      } catch (e) {
-        debugLog(`Queue error: ${e.message}`, 'error');
-      }
-      
-      isSending = false;
-      
-      // Process next after small delay
-      if (sendQueue.length > 0) {
-        setTimeout(processSendQueue, 300);
-      }
-    }
-    
-    // Log watch to Google Sheets
-    function logWatchToSheet(video, source = 'search') {
-      const deviceInfo = getDeviceInfo();
-      const action = source === 'search' ? 'watch_from_search' : 
-                     source === 'history' ? 'watch_from_history' : 
-                     'watch_from_playlist';
-      
-      debugLog(`Logging watch: "${video.title.substring(0, 50)}..." from ${source}`, 'info');
-      
-      const params = new URLSearchParams({
-        action: action,
-        timestamp: new Date().toISOString(),
-        userId: getUserId(),
-        videoId: video.id || '',
-        videoTitle: encodeURIComponent((video.title || '').substring(0, 200)),
-        channel: encodeURIComponent((video.channel || '').substring(0, 100)),
-        duration: video.duration || '',
-        device: deviceInfo.device,
-        browser: deviceInfo.browser,
-        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
-        screenSize: `${screen.width}x${screen.height}`
-      });
-      
-      queueSend(params);
-    }
-    
-    // Log search to Google Sheets
-    function logSearchToSheet(query, resultsCount) {
-      const deviceInfo = getDeviceInfo();
-      
-      debugLog(`Logging search: "${query}" (${resultsCount} results)`, 'info');
-      
-      const params = new URLSearchParams({
-        action: 'search',
-        timestamp: new Date().toISOString(),
-        userId: getUserId(),
-        searchQuery: encodeURIComponent(query),
-        resultsCount: resultsCount.toString(),
-        device: deviceInfo.device,
-        browser: deviceInfo.browser,
-        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
-        screenSize: `${screen.width}x${screen.height}`
-      });
-      
-      queueSend(params);
-    }
-    
-    // Test connection
-    function testConnection() {
-      const deviceInfo = getDeviceInfo();
-      
-      debugLog('Testing Google Sheets connection...', 'info');
-      
-      const params = new URLSearchParams({
-        action: 'test_connection',
-        timestamp: new Date().toISOString(),
-        userId: getUserId(),
-        videoTitle: encodeURIComponent('Connection Test from PWA'),
-        device: deviceInfo.device,
-        browser: deviceInfo.browser,
-        isPWA: deviceInfo.isPWA ? 'Yes' : 'No',
-        screenSize: `${screen.width}x${screen.height}`
-      });
-      
-      queueSend(params);
-    }
-    
-    // Show sync indicator
-    function showSyncIndicator(success) {
-      const indicator = document.getElementById('syncIndicator');
-      const text = document.getElementById('syncText');
-      
-      if (success) {
-        indicator.classList.remove('error');
-        text.textContent = 'Synced to Sheet';
-      } else {
-        indicator.classList.add('error');
-        text.textContent = 'Sync failed';
-      }
-      
-      indicator.classList.add('show');
-      setTimeout(() => indicator.classList.remove('show'), 2000);
-    }
-    
-    // Load history from localStorage
+    // Load history from localStorage on startup
     function loadHistoryFromStorage() {
       try {
-        const saved = localStorage.getItem('vp_search_history');
-        if (saved) searchHistory = JSON.parse(saved);
-        const savedWatch = localStorage.getItem('vp_watch_history');
-        if (savedWatch) watchHistory = JSON.parse(savedWatch);
-        debugLog(`Loaded ${searchHistory.length} search, ${watchHistory.length} watch from storage`, 'info');
+        const savedSearchHistory = localStorage.getItem('vp_search_history');
+        if (savedSearchHistory) {
+          searchHistory = JSON.parse(savedSearchHistory);
+        }
+        const savedWatchHistory = localStorage.getItem('vp_watch_history');
+        if (savedWatchHistory) {
+          watchHistory = JSON.parse(savedWatchHistory);
+        }
+        const savedKnownVideos = localStorage.getItem('vp_known_videos');
+        if (savedKnownVideos) {
+          knownVideoIds = new Set(JSON.parse(savedKnownVideos));
+        }
+        console.log('[HISTORY] Loaded', searchHistory.length, 'search items,', watchHistory.length, 'watch items,', knownVideoIds.size, 'known videos');
       } catch(e) {
+        console.error('[HISTORY] Failed to load from storage:', e);
         searchHistory = [];
         watchHistory = [];
+        knownVideoIds = new Set();
       }
     }
     
-    function saveSearchHistory() {
-      try { localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10))); } catch(e) {}
+    // Save known videos to localStorage
+    function saveKnownVideos() {
+      try {
+        localStorage.setItem('vp_known_videos', JSON.stringify([...knownVideoIds]));
+      } catch(e) {
+        console.error('[STORAGE] Failed to save known videos:', e);
+      }
     }
     
+    // Save search history to localStorage
+    function saveSearchHistory() {
+      try {
+        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
+      } catch(e) {
+        console.error('[HISTORY] Failed to save search history:', e);
+      }
+    }
+    
+    // Save watch history to localStorage
     function saveWatchHistory() {
-      try { localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50))); } catch(e) {}
+      try {
+        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
+      } catch(e) {
+        console.error('[HISTORY] Failed to save watch history:', e);
+      }
     }
     
     // ===== HELPERS =====
@@ -1312,6 +1206,7 @@
     const drawerBg = $('drawerBg');
     const drawerList = $('drawerList');
     const toast = $('toast');
+    const status = $('status');
     const refreshBtn = $('refreshBtn');
     const searchModal = $('searchModal');
     const searchInput = $('searchInput');
@@ -1320,6 +1215,9 @@
     const historyContent = $('historyContent');
     const searchHistorySection = $('searchHistorySection');
     const searchHistoryChips = $('searchHistoryChips');
+    const notifBtn = $('notifBtn');
+    const notifBarEl = $('notifBar');
+    const newVideoBanner = $('newVideoBanner');
     
     function fmt(s) {
       if (!s || isNaN(s)) return '0:00';
@@ -1353,6 +1251,12 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
     
+    function showStatus(text, type = '') {
+      status.textContent = text;
+      status.className = 'status show ' + type;
+      setTimeout(() => status.classList.remove('show'), 2000);
+    }
+    
     function getVid(url) {
       if (!url) return null;
       url = url.trim();
@@ -1370,32 +1274,214 @@
     function extractChannelId(url) {
       if (!url) return null;
       url = url.trim();
+      
       let match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
       if (match) return match[1];
+      
       match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
+      
       match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'handle', value: match[1] };
+      
       match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'custom', value: match[1] };
+      
       match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'user', value: match[1] };
+      
       return null;
     }
     
     function hashCode(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
         hash = hash & hash;
       }
       return hash.toString();
     }
     
+    // ===== NOTIFICATIONS =====
+    function checkNotificationSupport() {
+      return 'Notification' in window;
+    }
+    
+    function updateNotifButtonState() {
+      if (!checkNotificationSupport()) {
+        notifBtn.classList.add('denied');
+        notifBtn.title = 'Notifications not supported';
+        return;
+      }
+      
+      const permission = Notification.permission;
+      if (permission === 'granted') {
+        notifBtn.classList.add('enabled');
+        notifBtn.classList.remove('denied');
+        notifBtn.title = 'Notifications enabled';
+        notificationsEnabled = true;
+      } else if (permission === 'denied') {
+        notifBtn.classList.add('denied');
+        notifBtn.classList.remove('enabled');
+        notifBtn.title = 'Notifications blocked';
+        notificationsEnabled = false;
+      } else {
+        notifBtn.classList.remove('enabled', 'denied');
+        notifBtn.title = 'Enable notifications';
+        notificationsEnabled = false;
+      }
+    }
+    
+    async function requestNotificationPermission() {
+      if (!checkNotificationSupport()) {
+        msg('Notifications not supported in this browser');
+        return false;
+      }
+      
+      if (Notification.permission === 'granted') {
+        notificationsEnabled = true;
+        updateNotifButtonState();
+        msg('Notifications already enabled!');
+        return true;
+      }
+      
+      if (Notification.permission === 'denied') {
+        msg('Notifications blocked. Please enable in browser settings.');
+        return false;
+      }
+      
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          notificationsEnabled = true;
+          updateNotifButtonState();
+          notifBarEl.classList.add('hide');
+          msg('Notifications enabled! You\'ll be notified of new videos.');
+          
+          // Show test notification
+          showNotification('Notifications Enabled!', 'You will now receive alerts when new videos are added.');
+          return true;
+        } else {
+          msg('Notification permission denied');
+          updateNotifButtonState();
+          return false;
+        }
+      } catch (e) {
+        console.error('[NOTIF] Error requesting permission:', e);
+        msg('Failed to request notification permission');
+        return false;
+      }
+    }
+    
+    function showNotification(title, body, videoId = null, videoTitle = null) {
+      if (!notificationsEnabled || Notification.permission !== 'granted') {
+        console.log('[NOTIF] Notifications not enabled, showing in-app banner');
+        showInAppBanner(videoTitle || body, videoId);
+        return;
+      }
+      
+      // Try using service worker for notification (works in background)
+      if (swRegistration && 'showNotification' in swRegistration) {
+        swRegistration.showNotification(title, {
+          body: body,
+          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+          badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+          tag: 'new-video-' + (videoId || Date.now()),
+          vibrate: [200, 100, 200],
+          requireInteraction: true,
+          actions: [
+            { action: 'play', title: '▶ Play Now' },
+            { action: 'dismiss', title: 'Dismiss' }
+          ],
+          data: {
+            videoId: videoId,
+            videoTitle: videoTitle,
+            url: location.href
+          }
+        }).catch(e => {
+          console.log('[NOTIF] SW notification failed, using fallback:', e);
+          showFallbackNotification(title, body, videoId, videoTitle);
+        });
+      } else {
+        showFallbackNotification(title, body, videoId, videoTitle);
+      }
+      
+      // Also show in-app banner
+      if (videoId && videoTitle) {
+        showInAppBanner(videoTitle, videoId);
+      }
+    }
+    
+    function showFallbackNotification(title, body, videoId, videoTitle) {
+      try {
+        const notif = new Notification(title, {
+          body: body,
+          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+          tag: 'new-video-' + (videoId || Date.now()),
+          requireInteraction: true
+        });
+        
+        notif.onclick = () => {
+          window.focus();
+          if (videoId) {
+            playVideoById(videoId, videoTitle);
+          }
+          notif.close();
+        };
+      } catch (e) {
+        console.error('[NOTIF] Fallback notification failed:', e);
+      }
+    }
+    
+    function showInAppBanner(videoTitle, videoId) {
+      const banner = $('newVideoBanner');
+      const nameEl = $('newVideoName');
+      
+      nameEl.textContent = videoTitle || 'New video added';
+      banner.dataset.videoId = videoId || '';
+      banner.dataset.videoTitle = videoTitle || '';
+      
+      banner.classList.add('show');
+      
+      // Auto hide after 10 seconds
+      setTimeout(() => {
+        banner.classList.remove('show');
+      }, 10000);
+    }
+    
+    function playVideoById(videoId, videoTitle) {
+      if (!player || !ready) return;
+      
+      // Check if video is in playlist
+      const videoIndex = videos.findIndex(v => v.id === videoId);
+      if (videoIndex >= 0) {
+        idx = videoIndex;
+        loadVid();
+      } else {
+        // Play directly if not in playlist
+        loaderText.textContent = 'Loading...';
+        loader.classList.remove('hide');
+        vTitle.textContent = videoTitle || 'Playing video';
+        vCount.textContent = 'New Video';
+        player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
+      }
+    }
+    
     // ===== UI VISIBILITY =====
-    function showUI() { ui.classList.add('visible'); clearTimeout(hideT); }
-    function hideUI() { if (playing && !isSeeking) ui.classList.remove('visible'); }
-    function autoHide() { clearTimeout(hideT); if (playing && !isSeeking) hideT = setTimeout(hideUI, 3000); }
+    function showUI() {
+      ui.classList.add('visible');
+      clearTimeout(hideT);
+    }
+    
+    function hideUI() {
+      if (playing && !isSeeking) ui.classList.remove('visible');
+    }
+    
+    function autoHide() {
+      clearTimeout(hideT);
+      if (playing && !isSeeking) hideT = setTimeout(hideUI, 3000);
+    }
     
     function setPlayState(isPlay) {
       playing = isPlay;
@@ -1413,8 +1499,15 @@
     }
     
     // ===== PROGRESS =====
-    function startUpd() { stopUpd(); upd(); updT = setInterval(upd, 500); }
-    function stopUpd() { if (updT) { clearInterval(updT); updT = null; } }
+    function startUpd() {
+      stopUpd();
+      upd();
+      updT = setInterval(upd, 500);
+    }
+    
+    function stopUpd() {
+      if (updT) { clearInterval(updT); updT = null; }
+    }
     
     function upd() {
       if (!player || !ready || isSeeking) return;
@@ -1432,17 +1525,21 @@
     // ===== FETCH SHEET DATA =====
     async function fetchSheetData() {
       const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
-      debugLog('Fetching sheet data...', 'info');
+      
+      console.log('[FETCH] Getting sheet data...');
       
       const response = await fetch(url, { method: 'GET', cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch');
+      
+      if (!response.ok) throw new Error('Failed to fetch: ' + response.status);
       
       const text = await response.text();
       const jsonStart = text.indexOf('({');
       const jsonEnd = text.lastIndexOf('})');
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response');
+      if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid response format');
       
-      const data = JSON.parse(text.substring(jsonStart + 1, jsonEnd + 1));
+      const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
+      const data = JSON.parse(jsonStr);
+      
       const newVideos = [];
       const newChannels = [];
       const seenChannels = new Set();
@@ -1454,20 +1551,31 @@
             const urlCell = row.c[1];
             const channelCell = row.c[2];
             
-            let url = urlCell?.v ? String(urlCell.v).trim() : '';
+            let url = '';
+            if (urlCell && urlCell.v) {
+              url = String(urlCell.v).trim();
+            }
+            
             const videoId = getVid(url);
             if (videoId) {
-              let title = titleCell?.v ? String(titleCell.v).trim() : '';
-              if (!title && titleCache[videoId]) title = titleCache[videoId];
+              let title = '';
+              if (titleCell && titleCell.v) {
+                title = String(titleCell.v).trim();
+              }
+              if (!title && titleCache[videoId]) {
+                title = titleCache[videoId];
+              }
               newVideos.push({ id: videoId, title: title || '', url: url });
             }
             
-            if (channelCell?.v) {
+            if (channelCell && channelCell.v) {
               const channelUrl = String(channelCell.v).trim();
               if (channelUrl && !seenChannels.has(channelUrl)) {
                 seenChannels.add(channelUrl);
                 const channelInfo = extractChannelId(channelUrl);
-                if (channelInfo) newChannels.push(channelInfo);
+                if (channelInfo) {
+                  newChannels.push(channelInfo);
+                }
               }
             }
           }
@@ -1476,13 +1584,19 @@
       
       channelIds = newChannels;
       $('channelCount').textContent = channelIds.length;
-      debugLog(`Found ${newVideos.length} videos and ${channelIds.length} channels`, 'success');
+      
+      console.log('[FETCH] Found', newVideos.length, 'videos and', channelIds.length, 'channels');
       return newVideos;
     }
     
-    // ===== RESOLVE CHANNEL =====
+    // ===== RESOLVE CHANNEL TO ID =====
     async function resolveChannelToId(channelInfo) {
       if (typeof channelInfo === 'string') return channelInfo;
+      
+      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
+        console.log('[CHANNEL] API key not set, cannot resolve channel');
+        return null;
+      }
       
       try {
         let apiUrl = '';
@@ -1493,39 +1607,66 @@
         } else if (channelInfo.type === 'custom') {
           apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelInfo.value)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
         }
+        
         if (!apiUrl) return null;
         
         const res = await fetch(apiUrl);
         const data = await res.json();
         
-        if (channelInfo.type === 'custom' && data.items?.[0]) return data.items[0].snippet.channelId;
-        else if (data.items?.[0]) return data.items[0].id;
-      } catch (e) {}
+        if (data.error) {
+          console.error('[CHANNEL] API error:', data.error.message);
+          return null;
+        }
+        
+        if (channelInfo.type === 'custom' && data.items && data.items[0]) {
+          return data.items[0].snippet.channelId;
+        } else if (data.items && data.items[0]) {
+          return data.items[0].id;
+        }
+      } catch (e) {
+        console.error('[CHANNEL] Error resolving:', e);
+      }
+      
       return null;
     }
     
-    // ===== SEARCH =====
+    // ===== SEARCH VIDEOS =====
     async function searchVideosInChannels(query) {
-      if (!query.trim() || channelIds.length === 0) return [];
+      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
+        msg('Please add your YouTube API key!');
+        return [];
+      }
+      
+      if (!query.trim()) return [];
+      
+      if (channelIds.length === 0) {
+        msg('No channels found in Column C');
+        return [];
+      }
       
       const allResults = [];
-      const resolvedIds = [];
       
+      const resolvedIds = [];
       for (const ch of channelIds) {
         const resolved = await resolveChannelToId(ch);
         if (resolved) resolvedIds.push(resolved);
       }
       
-      debugLog(`Searching in ${resolvedIds.length} channels`, 'info');
+      console.log('[SEARCH] Searching in', resolvedIds.length, 'resolved channels');
       
       for (const channelId of resolvedIds) {
         try {
           const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${YOUTUBE_API_KEY}`;
+          
           const res = await fetch(searchUrl);
           const data = await res.json();
           
           if (data.error) {
-            if (data.error.code === 403) { msg('API quota exceeded'); return allResults; }
+            console.error('[SEARCH] API Error:', data.error.message);
+            if (data.error.code === 403) {
+              msg('API quota exceeded or key invalid');
+              return allResults;
+            }
             continue;
           }
           
@@ -1535,19 +1676,24 @@
                 id: item.id.videoId,
                 title: item.snippet.title,
                 channel: item.snippet.channelTitle,
-                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url
+                thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+                publishedAt: item.snippet.publishedAt
               });
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('[SEARCH] Error:', e);
+        }
       }
       
-      // Get video details
       if (allResults.length > 0) {
         try {
           const videoIds = allResults.map(r => r.id).join(',');
-          const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`);
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+          
+          const res = await fetch(detailsUrl);
           const data = await res.json();
+          
           if (data.items) {
             for (const item of data.items) {
               const result = allResults.find(r => r.id === item.id);
@@ -1557,28 +1703,36 @@
               }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.log('[SEARCH] Failed to get details:', e);
+        }
       }
       
-      // Deduplicate
       const unique = [];
       const seen = new Set();
       for (const r of allResults) {
-        if (!seen.has(r.id)) { seen.add(r.id); unique.push(r); }
+        if (!seen.has(r.id)) {
+          seen.add(r.id);
+          unique.push(r);
+        }
       }
       
-      debugLog(`Search completed: "${query}" found ${unique.length} results`, 'success');
       return unique;
     }
     
     function renderSearchResults(results, query) {
       if (results.length === 0) {
-        searchResults.innerHTML = `<div class="search-empty"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><p>No videos found for "${query}"</p></div>`;
+        searchResults.innerHTML = `
+          <div class="search-empty">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <p>No videos found for "${query}"</p>
+          </div>
+        `;
         return;
       }
       
       searchResults.innerHTML = results.map(r => `
-        <div class="search-result-item" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}" data-channel="${(r.channel || '').replace(/"/g, '&quot;')}" data-duration="${r.duration || ''}" data-thumbnail="${r.thumbnail || ''}">
+        <div class="search-result-item" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}">
           <div class="search-thumb">
             <img src="${r.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">
             ${r.duration ? `<span class="duration">${r.duration}</span>` : ''}
@@ -1605,14 +1759,20 @@
     
     function addToWatchHistory(video) {
       watchHistory = watchHistory.filter(v => v.id !== video.id);
-      watchHistory.unshift({ ...video, watchedAt: Date.now() });
+      watchHistory.unshift({
+        ...video,
+        watchedAt: Date.now()
+      });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
-      debugLog(`Added to local history: ${video.title.substring(0, 40)}...`, 'success');
+      console.log('[HISTORY] Added to watch history:', video.title, '- Total:', watchHistory.length);
     }
     
     function renderSearchHistory() {
-      if (searchHistory.length === 0) { searchHistorySection.style.display = 'none'; return; }
+      if (searchHistory.length === 0) {
+        searchHistorySection.style.display = 'none';
+        return;
+      }
       searchHistorySection.style.display = 'block';
       searchHistoryChips.innerHTML = searchHistory.map(q => `
         <div class="search-chip" data-query="${q.replace(/"/g, '&quot;')}">
@@ -1622,20 +1782,27 @@
       `).join('');
     }
     
-    function formatTimeAgo(ts) {
-      const s = Math.floor((Date.now() - ts) / 1000);
-      if (s < 60) return 'Just now';
-      const m = Math.floor(s / 60);
-      if (m < 60) return m + 'm ago';
-      const h = Math.floor(m / 60);
-      if (h < 24) return h + 'h ago';
-      const d = Math.floor(h / 24);
-      return d + 'd ago';
+    function formatTimeAgo(timestamp) {
+      const seconds = Math.floor((Date.now() - timestamp) / 1000);
+      if (seconds < 60) return 'Just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return minutes + 'm ago';
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return hours + 'h ago';
+      const days = Math.floor(hours / 24);
+      if (days < 7) return days + 'd ago';
+      const weeks = Math.floor(days / 7);
+      return weeks + 'w ago';
     }
     
     function renderWatchHistory() {
       if (watchHistory.length === 0) {
-        historyContent.innerHTML = `<div class="history-empty"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><p>No watch history yet.</p></div>`;
+        historyContent.innerHTML = `
+          <div class="history-empty">
+            <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <p>No watch history yet.<br>Videos you play from search will appear here.</p>
+          </div>
+        `;
         return;
       }
       
@@ -1657,7 +1824,7 @@
       `).join('');
     }
     
-    // ===== MODALS =====
+    // ===== SEARCH UI =====
     function openSearch() {
       searchModal.classList.add('open');
       searchInput.focus();
@@ -1668,27 +1835,55 @@
     function closeSearch() {
       searchModal.classList.remove('open');
       searchInput.value = '';
-      searchResults.innerHTML = `<div class="search-empty"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><p>Enter a search term to find videos</p></div>`;
+      searchResults.innerHTML = `
+        <div class="search-empty">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <p>Enter a search term to find videos<br>from your channels</p>
+        </div>
+      `;
     }
     
-    function openHistory() { historyModal.classList.add('open'); renderWatchHistory(); if (player && playing) player.pauseVideo(); }
-    function closeHistory() { historyModal.classList.remove('open'); }
+    // ===== HISTORY UI =====
+    function openHistory() {
+      historyModal.classList.add('open');
+      renderWatchHistory();
+      if (player && playing) player.pauseVideo();
+    }
+    
+    function closeHistory() {
+      historyModal.classList.remove('open');
+    }
     
     async function performSearch() {
       const query = searchInput.value.trim();
-      if (!query) { msg('Enter a search term'); return; }
+      if (!query) {
+        msg('Enter a search term');
+        return;
+      }
+      
       if (isSearching) return;
       isSearching = true;
       
       addToSearchHistory(query);
-      searchResults.innerHTML = `<div class="search-loading"><div class="spinner"></div><p>Searching ${channelIds.length} channels...</p></div>`;
+      
+      searchResults.innerHTML = `
+        <div class="search-loading">
+          <div class="spinner"></div>
+          <p>Searching ${channelIds.length} channels...</p>
+        </div>
+      `;
       
       try {
         const results = await searchVideosInChannels(query);
         renderSearchResults(results, query);
-        logSearchToSheet(query, results.length);
       } catch (e) {
-        searchResults.innerHTML = `<div class="search-empty"><p>Search failed. Try again.</p></div>`;
+        console.error('[SEARCH] Error:', e);
+        searchResults.innerHTML = `
+          <div class="search-empty">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <p>Search failed. Please try again.</p>
+          </div>
+        `;
       }
       
       isSearching = false;
@@ -1698,113 +1893,182 @@
     searchResults.onclick = e => {
       const item = e.target.closest('.search-result-item');
       if (item) {
-        const videoData = {
-          id: item.dataset.id,
-          title: item.dataset.title,
-          thumbnail: item.dataset.thumbnail,
-          duration: item.dataset.duration,
-          channel: item.dataset.channel
-        };
+        const videoId = item.dataset.id;
+        const videoTitle = item.dataset.title;
+        const thumbnail = item.querySelector('.search-thumb img')?.src || '';
+        const duration = item.querySelector('.search-thumb .duration')?.textContent || '';
+        const channel = item.querySelector('.search-result-channel')?.textContent || '';
         
-        debugLog(`Playing from search: ${videoData.title.substring(0, 50)}...`, 'info');
-        addToWatchHistory(videoData);
-        logWatchToSheet(videoData, 'search');
+        addToWatchHistory({
+          id: videoId,
+          title: videoTitle,
+          thumbnail: thumbnail,
+          duration: duration,
+          channel: channel
+        });
+        
         closeSearch();
         
         if (player && ready) {
           loaderText.textContent = 'Loading...';
           loader.classList.remove('hide');
-          vTitle.textContent = videoData.title;
+          vTitle.textContent = videoTitle;
           vCount.textContent = 'Search Result';
-          player.loadVideoById({ videoId: videoData.id, suggestedQuality: 'default' });
-          msg('Playing: ' + videoData.title);
+          player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
+          msg('Playing: ' + videoTitle);
         }
       }
     };
     
+    // Search history chip click
     searchHistoryChips.onclick = e => {
       const chip = e.target.closest('.search-chip');
-      if (chip) { searchInput.value = chip.dataset.query; performSearch(); }
+      if (chip) {
+        const query = chip.dataset.query;
+        searchInput.value = query;
+        performSearch();
+      }
     };
     
-    $('clearSearchHistory').onclick = e => { e.stopPropagation(); searchHistory = []; saveSearchHistory(); renderSearchHistory(); msg('Cleared'); };
+    // Clear search history
+    $('clearSearchHistory').onclick = e => {
+      e.stopPropagation();
+      searchHistory = [];
+      saveSearchHistory();
+      renderSearchHistory();
+      msg('Search history cleared');
+    };
     
+    // History item click
     historyContent.onclick = e => {
       const deleteBtn = e.target.closest('.history-item-delete');
       if (deleteBtn) {
         e.stopPropagation();
-        watchHistory.splice(parseInt(deleteBtn.dataset.delete), 1);
+        const index = parseInt(deleteBtn.dataset.delete);
+        watchHistory.splice(index, 1);
         saveWatchHistory();
         renderWatchHistory();
-        msg('Removed');
+        msg('Removed from history');
         return;
       }
       
       const item = e.target.closest('.history-item');
       if (item) {
-        const i = parseInt(item.dataset.index);
-        const video = watchHistory[i];
-        watchHistory.splice(i, 1);
+        const videoId = item.dataset.id;
+        const videoTitle = item.dataset.title;
+        
+        const index = parseInt(item.dataset.index);
+        const video = watchHistory[index];
+        watchHistory.splice(index, 1);
         video.watchedAt = Date.now();
         watchHistory.unshift(video);
         saveWatchHistory();
         
-        logWatchToSheet(video, 'history');
         closeHistory();
         
         if (player && ready) {
           loaderText.textContent = 'Loading...';
           loader.classList.remove('hide');
-          vTitle.textContent = video.title;
+          vTitle.textContent = videoTitle;
           vCount.textContent = 'From History';
-          player.loadVideoById({ videoId: video.id, suggestedQuality: 'default' });
-          msg('Playing: ' + video.title);
+          player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
+          msg('Playing: ' + videoTitle);
         }
       }
     };
     
+    // Clear all watch history
     $('clearHistory').onclick = e => {
       e.stopPropagation();
-      if (confirm('Clear all?')) { watchHistory = []; saveWatchHistory(); renderWatchHistory(); msg('Cleared'); }
+      if (confirm('Clear all watch history?')) {
+        watchHistory = [];
+        saveWatchHistory();
+        renderWatchHistory();
+        msg('Watch history cleared');
+      }
     };
     
-    // ===== YOUTUBE TITLES =====
+    // ===== FETCH YOUTUBE TITLES =====
     async function fetchYouTubeTitle(videoId) {
       if (titleCache[videoId]) return titleCache[videoId];
+      
       try {
-        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-        const data = await res.json();
-        if (data.title) { titleCache[videoId] = data.title; return data.title; }
+        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
       } catch (e) {}
+      
+      try {
+        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        const data = await response.json();
+        if (data.title) {
+          titleCache[videoId] = data.title;
+          return data.title;
+        }
+      } catch (e) {}
+      
       return null;
     }
     
     async function fetchAllTitles() {
       for (let i = 0; i < videos.length; i++) {
-        const v = videos[i];
-        if (v.title && !v.title.match(/^Video \d+$/)) continue;
-        const title = await fetchYouTubeTitle(v.id);
+        const video = videos[i];
+        if (video.title && !video.title.match(/^Video \d+$/) && video.title !== 'Loading...') continue;
+        
+        const title = await fetchYouTubeTitle(video.id);
         if (title) {
           videos[i].title = title;
           if (i === idx) vTitle.textContent = title;
           const item = drawerList.querySelector(`[data-i="${i}"] .name`);
-          if (item) { item.textContent = title; item.classList.remove('loading'); }
-        } else { videos[i].title = 'Video ' + (i + 1); }
+          if (item) {
+            item.textContent = title;
+            item.classList.remove('loading');
+          }
+        } else {
+          videos[i].title = 'Video ' + (i + 1);
+        }
         await new Promise(r => setTimeout(r, 200));
       }
     }
     
     // ===== LOAD DATA =====
-    async function loadData(showLoader = true) {
+    async function loadData(showLoader = true, isInitialLoad = false) {
       try {
-        if (showLoader) { loaderText.textContent = 'Loading playlist...'; loader.classList.remove('hide'); }
+        if (showLoader) {
+          loaderText.textContent = 'Loading playlist...';
+          loader.classList.remove('hide');
+        }
         
         const newVideos = await fetchSheetData();
-        if (!newVideos.length) { showErr('No videos found'); return false; }
+        
+        if (!newVideos.length) {
+          showErr('No videos found in sheet');
+          return false;
+        }
         
         const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
         const dataChanged = newHash !== lastDataHash;
         lastDataHash = newHash;
+        
+        // Detect new videos
+        const detectedNewVideos = [];
+        if (!isInitialLoad && knownVideoIds.size > 0) {
+          for (const video of newVideos) {
+            if (!knownVideoIds.has(video.id)) {
+              detectedNewVideos.push(video);
+              console.log('[NEW VIDEO] Detected:', video.id, video.title);
+            }
+          }
+        }
+        
+        // Update known videos
+        for (const video of newVideos) {
+          knownVideoIds.add(video.id);
+        }
+        saveKnownVideos();
         
         if (dataChanged || videos.length === 0) {
           const currentId = videos[idx]?.id;
@@ -1817,31 +2081,93 @@
           }
           
           if (showLoader) {
-            try { const s = localStorage.getItem('vp_idx'); if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1); } catch(e) {}
+            try {
+              const s = localStorage.getItem('vp_idx');
+              if (s) idx = Math.min(parseInt(s) || 0, videos.length - 1);
+            } catch(e) {}
           }
           
           videos.forEach((v, i) => { if (!v.title) v.title = 'Loading...'; });
+          
           renderList();
           updTitle();
           $('plCount').textContent = videos.length;
-          fetchAllTitles();
-          if (!showLoader) msg('Playlist updated!');
+          
+          fetchAllTitles().then(() => {
+            // After fetching titles, notify about new videos
+            if (detectedNewVideos.length > 0) {
+              notifyNewVideos(detectedNewVideos);
+            }
+          });
+          
+          if (!showLoader && detectedNewVideos.length === 0) {
+            msg('Playlist updated! (' + videos.length + ' videos)');
+          }
+          
           return true;
         }
+        
+        // Still notify if new videos detected even if hash hasn't changed significantly
+        if (detectedNewVideos.length > 0) {
+          notifyNewVideos(detectedNewVideos);
+        }
+        
         return false;
       } catch(e) {
-        debugLog(`Load error: ${e.message}`, 'error');
-        if (showLoader) showErr('Failed to load');
+        console.error('[DATA] Error:', e);
+        if (showLoader) showErr('Failed to load: ' + e.message);
+        else showStatus('Sync failed', 'error');
         return false;
       }
     }
     
-    function showErr(m) { loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`; }
+    async function notifyNewVideos(newVideos) {
+      console.log('[NOTIFY] Notifying about', newVideos.length, 'new videos');
+      
+      for (const video of newVideos) {
+        // Fetch title if not available
+        let title = video.title;
+        if (!title || title === 'Loading...') {
+          title = await fetchYouTubeTitle(video.id);
+          if (title) {
+            video.title = title;
+            // Update in main videos array
+            const idx = videos.findIndex(v => v.id === video.id);
+            if (idx >= 0) videos[idx].title = title;
+          }
+        }
+        
+        const finalTitle = title || 'New Video';
+        
+        console.log('[NOTIFY] New video:', finalTitle);
+        showNotification(
+          '🎬 New Video Added!',
+          finalTitle,
+          video.id,
+          finalTitle
+        );
+        
+        // Small delay between notifications
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      // Re-render list to show new badges
+      renderList();
+    }
+    
+    function showErr(m) {
+      loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`;
+    }
     
     function renderList() {
       drawerList.innerHTML = videos.map((v, i) => {
-        const loading = v.title === 'Loading...' || !v.title;
-        return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}"><span class="num">${i + 1}</span><span class="name${loading ? ' loading' : ''}">${v.title || 'Loading...'}</span></div>`;
+        const isLoading = v.title === 'Loading...' || !v.title;
+        const isNew = v.isNew;
+        return `<div class="pl-item${i === idx ? ' active' : ''}${isNew ? ' new' : ''}" data-i="${i}">
+          <span class="num">${i + 1}</span>
+          <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
+          ${isNew ? '<span class="new-badge">NEW</span>' : ''}
+        </div>`;
       }).join('');
     }
     
@@ -1853,16 +2179,23 @@
       document.head.appendChild(s);
     }
     
-    window.onYouTubeIframeAPIReady = function() { if (videos.length) createPlayer(); };
+    window.onYouTubeIframeAPIReady = function() {
+      if (videos.length) createPlayer();
+    };
     
     function createPlayer() {
       const v = videos[idx];
       if (!v) return;
+      
       updTitle();
       
       player = new YT.Player('player', {
         videoId: v.id,
-        playerVars: { autoplay: 1, controls: 0, disablekb: 1, enablejsapi: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, showinfo: 0, cc_load_policy: 0, origin: location.origin },
+        playerVars: {
+          autoplay: 1, controls: 0, disablekb: 1, enablejsapi: 1, fs: 0,
+          iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0,
+          showinfo: 0, cc_load_policy: 0, origin: location.origin
+        },
         events: { onReady: onReady, onStateChange: onState, onError: onErr }
       });
     }
@@ -1873,73 +2206,114 @@
       dur = player.getDuration() || 0;
       durT.textContent = fmt(dur);
       player.setPlaybackRate(speed);
-      showUI(); autoHide(); startUpd();
+      showUI();
+      autoHide();
+      startUpd();
       player.playVideo();
-      
-      // Log initial playlist video
-      const video = videos[idx];
-      if (video) {
-        debugLog(`Initial playlist video: ${video.title}`, 'info');
-        logWatchToSheet(video, 'playlist');
-      }
     }
     
     function onState(e) {
       const s = e.data;
-      if (s === YT.PlayerState.PLAYING) { loader.classList.add('hide'); setPlayState(true); startUpd(); }
-      else if (s === YT.PlayerState.PAUSED) { setPlayState(false); stopUpd(); save(); }
-      else if (s === YT.PlayerState.BUFFERING) { loaderText.textContent = 'Buffering...'; loader.classList.remove('hide'); }
-      else if (s === YT.PlayerState.ENDED) { loader.classList.add('hide'); if (autoNext && idx < videos.length - 1) { idx++; loadVid(); } else setPlayState(false); }
-      else if (s === YT.PlayerState.CUED) { loader.classList.add('hide'); }
+      if (s === YT.PlayerState.PLAYING) {
+        loader.classList.add('hide');
+        setPlayState(true);
+        startUpd();
+      } else if (s === YT.PlayerState.PAUSED) {
+        setPlayState(false);
+        stopUpd();
+        save();
+      } else if (s === YT.PlayerState.BUFFERING) {
+        loaderText.textContent = 'Buffering...';
+        loader.classList.remove('hide');
+      } else if (s === YT.PlayerState.ENDED) {
+        loader.classList.add('hide');
+        if (autoNext && idx < videos.length - 1) { idx++; loadVid(); }
+        else setPlayState(false);
+      } else if (s === YT.PlayerState.CUED) {
+        loader.classList.add('hide');
+      }
     }
     
-    function onErr() { loader.classList.add('hide'); msg('Error - try next'); }
+    function onErr(e) {
+      loader.classList.add('hide');
+      msg('Error loading video - try next');
+    }
     
     function loadVid() {
       if (!player || !ready || !videos[idx]) return;
       loaderText.textContent = 'Loading...';
       loader.classList.remove('hide');
-      updTitle(); renderList(); save();
-      
-      const video = videos[idx];
-      logWatchToSheet(video, 'playlist');
-      player.loadVideoById({ videoId: video.id, suggestedQuality: 'default' });
+      updTitle();
+      renderList();
+      save();
+      player.loadVideoById({ videoId: videos[idx].id, suggestedQuality: 'default' });
     }
     
     function updTitle() {
       const v = videos[idx];
-      if (v) { vTitle.textContent = v.title || 'Loading...'; vCount.textContent = (idx + 1) + '/' + videos.length; }
+      if (v) {
+        vTitle.textContent = v.title || 'Loading...';
+        vCount.textContent = (idx + 1) + '/' + videos.length;
+      }
     }
     
-    function save() { try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {} }
+    function save() {
+      try { localStorage.setItem('vp_idx', idx.toString()); } catch(e) {}
+    }
     
     // ===== CONTROLS =====
-    function toggle() { if (!player || !ready) return; if (playing) player.pauseVideo(); else player.playVideo(); }
+    function toggle() {
+      if (!player || !ready) return;
+      if (playing) player.pauseVideo();
+      else player.playVideo();
+    }
     
     function toggleMute() {
       if (!player || !ready) return;
       muted = !muted;
-      if (muted) { player.mute(); icVol.style.display = 'none'; icMute.style.display = 'block'; }
-      else { player.unMute(); icVol.style.display = 'block'; icMute.style.display = 'none'; }
+      if (muted) {
+        player.mute();
+        icVol.style.display = 'none';
+        icMute.style.display = 'block';
+      } else {
+        player.unMute();
+        icVol.style.display = 'block';
+        icMute.style.display = 'none';
+      }
     }
     
-    function seekBy(sec) { if (!player || !ready) return; player.seekTo(Math.max(0, player.getCurrentTime() + sec), true); }
-    function seekTo(pct) { if (!player || !ready || !dur) return; player.seekTo(dur * pct, true); }
+    function seekBy(sec) {
+      if (!player || !ready) return;
+      player.seekTo(Math.max(0, player.getCurrentTime() + sec), true);
+    }
+    
+    function seekTo(pct) {
+      if (!player || !ready || !dur) return;
+      player.seekTo(dur * pct, true);
+    }
     
     function cycleSpd() {
       const spds = [1, 1.25, 1.5, 1.75, 2, 0.5, 0.75];
-      speed = spds[(spds.indexOf(speed) + 1) % spds.length];
+      const i = spds.indexOf(speed);
+      speed = spds[(i + 1) % spds.length];
       if (player && ready) player.setPlaybackRate(speed);
       $('spdBtn').textContent = speed + 'x';
       msg('Speed: ' + speed + 'x');
     }
     
-    function toggleAuto() { autoNext = !autoNext; $('autoBtn').classList.toggle('on', autoNext); msg('Autoplay: ' + (autoNext ? 'On' : 'Off')); }
+    function toggleAuto() {
+      autoNext = !autoNext;
+      $('autoBtn').classList.toggle('on', autoNext);
+      msg('Autoplay: ' + (autoNext ? 'On' : 'Off'));
+    }
     
     function toggleFS() {
       const w = $('wrap');
-      if (!document.fullscreenElement) (w.requestFullscreen || w.webkitRequestFullscreen || w.msRequestFullscreen).call(w);
-      else (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+      if (!document.fullscreenElement) {
+        (w.requestFullscreen || w.webkitRequestFullscreen || w.msRequestFullscreen).call(w);
+      } else {
+        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+      }
     }
     
     function prev() { idx = (idx - 1 + videos.length) % videos.length; loadVid(); }
@@ -1950,47 +2324,55 @@
     
     async function manualRefresh() {
       refreshBtn.classList.add('spinning');
-      msg('Refreshing...');
-      const changed = await loadData(false);
+      msg('Refreshing playlist...');
+      const changed = await loadData(false, false);
       refreshBtn.classList.remove('spinning');
-      if (!changed) msg('Up to date');
+      if (!changed) msg('Playlist is up to date');
+    }
+    
+    async function autoRefresh() {
+      try { await loadData(false, false); } catch (e) {}
     }
     
     // ===== PROGRESS BAR =====
-    function getSeekPos(e) {
+    function getSeekPosition(e) {
       const rect = progBar.getBoundingClientRect();
-      const x = e.touches?.[0]?.clientX || e.changedTouches?.[0]?.clientX || e.clientX;
-      return Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+      let clientX;
+      if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
+      else if (e.changedTouches && e.changedTouches.length > 0) clientX = e.changedTouches[0].clientX;
+      else clientX = e.clientX;
+      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     }
     
-    function startSeek(e) {
-      e.preventDefault(); e.stopPropagation();
-      isSeeking = true;
-      progBar.classList.add('dragging');
-      showUI();
-      const pct = getSeekPos(e);
+    function updateSeekPreview(pct) {
       progFill.style.width = (pct * 100) + '%';
       progThumb.style.left = (pct * 100) + '%';
       curT.textContent = fmt(dur * pct);
-      
+    }
+    
+    function startSeek(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      isSeeking = true;
+      progBar.classList.add('dragging');
+      showUI();
+      updateSeekPreview(getSeekPosition(e));
       document.addEventListener('mousemove', moveSeek);
       document.addEventListener('mouseup', endSeek);
       document.addEventListener('touchmove', moveSeek, { passive: false });
       document.addEventListener('touchend', endSeek);
+      document.addEventListener('touchcancel', endSeek);
     }
     
     function moveSeek(e) {
       if (!isSeeking) return;
       e.preventDefault();
-      const pct = getSeekPos(e);
-      progFill.style.width = (pct * 100) + '%';
-      progThumb.style.left = (pct * 100) + '%';
-      curT.textContent = fmt(dur * pct);
+      updateSeekPreview(getSeekPosition(e));
     }
     
     function endSeek(e) {
       if (!isSeeking) return;
-      seekTo(getSeekPos(e));
+      seekTo(getSeekPosition(e));
       isSeeking = false;
       progBar.classList.remove('dragging');
       autoHide();
@@ -1998,11 +2380,16 @@
       document.removeEventListener('mouseup', endSeek);
       document.removeEventListener('touchmove', moveSeek);
       document.removeEventListener('touchend', endSeek);
+      document.removeEventListener('touchcancel', endSeek);
     }
     
     progBar.addEventListener('mousedown', startSeek);
     progBar.addEventListener('touchstart', startSeek, { passive: false });
-    progBar.addEventListener('click', e => { if (!isSeeking) { e.stopPropagation(); seekTo(getSeekPos(e)); } });
+    progBar.addEventListener('click', e => {
+      if (isSeeking) return;
+      e.stopPropagation();
+      seekTo(getSeekPosition(e));
+    });
     
     // ===== EVENTS =====
     $('playBtn').onclick = e => { e.stopPropagation(); toggle(); };
@@ -2023,29 +2410,89 @@
     $('historyClose').onclick = e => { e.stopPropagation(); closeHistory(); };
     drawerBg.onclick = closeDrawer;
     
-    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); performSearch(); } });
-    drawerList.onclick = e => { const it = e.target.closest('.pl-item'); if (it) { idx = parseInt(it.dataset.i); loadVid(); closeDrawer(); } };
+    // Notification button
+    notifBtn.onclick = e => {
+      e.stopPropagation();
+      requestNotificationPermission();
+    };
+    
+    // Notification bar buttons
+    $('enableNotif').onclick = e => {
+      e.stopPropagation();
+      requestNotificationPermission();
+    };
+    
+    $('closeNotifBar').onclick = e => {
+      e.stopPropagation();
+      notifBarEl.classList.add('hide');
+      try { localStorage.setItem('vp_notif_dismissed', 'true'); } catch(e) {}
+    };
+    
+    // New video banner
+    $('playNewVideo').onclick = e => {
+      e.stopPropagation();
+      const banner = $('newVideoBanner');
+      const videoId = banner.dataset.videoId;
+      const videoTitle = banner.dataset.videoTitle;
+      if (videoId) {
+        playVideoById(videoId, videoTitle);
+      }
+      banner.classList.remove('show');
+    };
+    
+    $('closeNewBanner').onclick = e => {
+      e.stopPropagation();
+      $('newVideoBanner').classList.remove('show');
+    };
+    
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); performSearch(); }
+    });
+    
+    drawerList.onclick = e => {
+      const it = e.target.closest('.pl-item');
+      if (it) { idx = parseInt(it.dataset.i); loadVid(); closeDrawer(); }
+    };
     
     let lastTap = 0;
     center.onclick = e => {
       if (e.target === bigPlay || e.target.closest('.play-big')) return;
+      
       const now = Date.now();
+      const diff = now - lastTap;
       const r = center.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width;
       
-      if (now - lastTap < 300) {
-        if (x < 0.35) { seekBy(-10); tapL.classList.add('show'); setTimeout(() => tapL.classList.remove('show'), 400); }
-        else if (x > 0.65) { seekBy(10); tapR.classList.add('show'); setTimeout(() => tapR.classList.remove('show'), 400); }
-        else toggleFS();
+      if (diff < 300) {
+        if (x < 0.35) {
+          seekBy(-10);
+          tapL.classList.add('show');
+          setTimeout(() => tapL.classList.remove('show'), 400);
+        } else if (x > 0.65) {
+          seekBy(10);
+          tapR.classList.add('show');
+          setTimeout(() => tapR.classList.remove('show'), 400);
+        } else {
+          toggleFS();
+        }
         lastTap = 0;
       } else {
         lastTap = now;
-        setTimeout(() => { if (lastTap === now) { if (ui.classList.contains('visible') && playing) hideUI(); else { showUI(); autoHide(); } } }, 300);
+        setTimeout(() => {
+          if (lastTap === now) {
+            if (ui.classList.contains('visible') && playing) hideUI();
+            else { showUI(); autoHide(); }
+          }
+        }, 300);
       }
     };
     
     document.querySelector('.top').onclick = () => { showUI(); autoHide(); };
-    document.querySelector('.bottom').onclick = e => { if (!e.target.closest('.prog-bar')) { showUI(); autoHide(); } };
+    document.querySelector('.bottom').onclick = e => {
+      if (e.target.closest('.prog-bar')) return;
+      showUI();
+      autoHide();
+    };
     
     document.onkeydown = e => {
       if (e.target.tagName === 'INPUT') return;
@@ -2057,20 +2504,42 @@
         case 'f': case 'F': toggleFS(); break;
         case 'n': case 'N': next(); break;
         case 'p': case 'P': prev(); break;
-        case 'Escape': closeSearch(); closeHistory(); closeDrawer(); break;
+        case 'r': case 'R': manualRefresh(); break;
+        case 's': case 'S': openSearch(); break;
+        case 'Escape': closeSearch(); closeDrawer(); closeHistory(); break;
       }
     };
     
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') loadData(false); });
-    window.addEventListener('online', () => { msg('Back online!'); loadData(false); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') autoRefresh();
+    });
+    
+    window.addEventListener('online', () => { msg('Back online!'); autoRefresh(); });
+    
+    // Listen for messages from service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', event => {
+        console.log('[SW MESSAGE]', event.data);
+        if (event.data && event.data.type === 'PLAY_VIDEO') {
+          playVideoById(event.data.videoId, event.data.videoTitle);
+        }
+      });
+    }
     
     // ===== PWA =====
     let deferredPrompt = null;
     const installBar = $('installBar');
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.matchMedia('(display-mode: fullscreen)').matches ||
+                  window.navigator.standalone === true;
     
     if (!isPWA) {
-      window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; installBar.classList.remove('hide'); });
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBar.classList.remove('hide');
+      });
     }
     
     $('installBtn').onclick = async () => {
@@ -2086,29 +2555,75 @@
     
     // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-      setTimeout(() => navigator.serviceWorker.register('sw.js?v=' + Date.now()).catch(() => {}), 1000);
+      // Clear old registrations first
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) registration.unregister();
+      });
+      
+      // Register new service worker
+      setTimeout(() => {
+        navigator.serviceWorker.register('sw.js?v=' + Date.now())
+          .then(registration => {
+            console.log('[SW] Registered:', registration);
+            swRegistration = registration;
+          })
+          .catch(err => {
+            console.error('[SW] Registration failed:', err);
+          });
+      }, 1000);
+    }
+    
+    if ('caches' in window) {
+      caches.keys().then(keys => { keys.forEach(key => caches.delete(key)); });
     }
     
     // ===== INIT =====
     async function init() {
-      debugLog('Starting Video Player...', 'info');
-      debugLog(`User ID: ${getUserId()}`, 'info');
-      debugLog(`Apps Script URL: ${APPS_SCRIPT_URL.substring(0, 50)}...`, 'info');
+      console.log('[INIT] Starting Video Player...');
       
+      // Load history from localStorage first
       loadHistoryFromStorage();
       
-      // Test connection on startup
-      testConnection();
+      // Check notification support and permission
+      updateNotifButtonState();
       
-      await loadData(true);
+      // Show notification permission bar if not granted and not dismissed
+      if (checkNotificationSupport() && Notification.permission === 'default') {
+        try {
+          const dismissed = localStorage.getItem('vp_notif_dismissed');
+          if (!dismissed) {
+            setTimeout(() => {
+              notifBarEl.classList.remove('hide');
+            }, 3000);
+          }
+        } catch(e) {}
+      }
+      
+      // Check API key
+      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
+        console.warn('[INIT] YouTube API key not configured! Search will not work.');
+      }
+      
+      // Initial load - mark as initial to not trigger notifications
+      const isFirstLoad = knownVideoIds.size === 0;
+      await loadData(true, isFirstLoad);
       
       if (videos.length > 0) {
         loaderText.textContent = 'Loading player...';
         loadAPI();
       }
       
-      setInterval(() => loadData(false), AUTO_REFRESH_INTERVAL);
+      // Auto refresh every 15 seconds
+      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      
+      // Check URL for video parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const videoParam = urlParams.get('v');
+      if (videoParam) {
+        setTimeout(() => {
+          playVideoById(videoParam, null);
+        }, 2000);
+      }
     }
     
     init();
