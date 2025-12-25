@@ -107,10 +107,9 @@
     .nav-btn.search-btn { background: rgba(59, 130, 246, 0.3); }
     .nav-btn.search-btn:active { background: rgba(59, 130, 246, 0.5); }
     
-    .nav-btn.notif-btn { background: rgba(251, 191, 36, 0.3); }
-    .nav-btn.notif-btn:active { background: rgba(251, 191, 36, 0.5); }
-    .nav-btn.notif-btn.enabled { background: rgba(34, 197, 94, 0.5); }
-    .nav-btn.notif-btn.denied { background: rgba(239, 68, 68, 0.3); }
+    .nav-btn.notify-btn { background: rgba(251, 191, 36, 0.3); }
+    .nav-btn.notify-btn:active { background: rgba(251, 191, 36, 0.5); }
+    .nav-btn.notify-btn.on { background: rgba(251, 191, 36, 0.7); }
     
     .info {
       flex: 1;
@@ -322,14 +321,14 @@
     }
     .pl-item:active { background: #222; }
     .pl-item.active { background: #1a365d; border-left: 3px solid #3b82f6; }
-    .pl-item.new { background: rgba(34, 197, 94, 0.2); border-left: 3px solid #22c55e; }
+    .pl-item.new { background: rgba(251, 191, 36, 0.1); border-left: 3px solid #fbbf24; }
     .pl-item .num {
       font-size: 12px;
       font-weight: 600;
       color: #3b82f6;
       min-width: 22px;
     }
-    .pl-item.new .num { color: #22c55e; }
+    .pl-item.new .num { color: #fbbf24; }
     .pl-item .name {
       flex: 1;
       font-size: 12px;
@@ -342,12 +341,12 @@
       font-style: italic;
     }
     .pl-item .new-badge {
-      background: #22c55e;
+      background: #fbbf24;
       color: #000;
-      font-size: 9px;
-      font-weight: 700;
       padding: 2px 6px;
       border-radius: 10px;
+      font-size: 9px;
+      font-weight: 700;
     }
     
     /* Search Modal */
@@ -643,9 +642,9 @@
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
     /* Notification Permission Bar */
-    .notif-bar {
+    .notify-bar {
       position: fixed;
-      bottom: 70px;
+      bottom: 15px;
       left: 50%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -658,10 +657,10 @@
       box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
       max-width: 95%;
     }
-    .notif-bar.hide { display: none; }
-    .notif-bar svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
-    .notif-bar span { color: #fff; font-size: 12px; font-weight: 500; }
-    .notif-bar .n-btn {
+    .notify-bar.hide { display: none; }
+    .notify-bar svg { width: 20px; height: 20px; fill: #fff; flex-shrink: 0; }
+    .notify-bar span { color: #fff; font-size: 12px; font-weight: 500; }
+    .notify-bar .n-btn {
       background: #fff;
       color: #d97706;
       border: none;
@@ -672,7 +671,7 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .notif-bar .n-close {
+    .notify-bar .n-close {
       background: rgba(255,255,255,0.25);
       border: none;
       width: 22px;
@@ -684,7 +683,7 @@
       cursor: pointer;
       flex-shrink: 0;
     }
-    .notif-bar .n-close svg { width: 12px; height: 12px; }
+    .notify-bar .n-close svg { width: 12px; height: 12px; }
     
     .status {
       position: fixed;
@@ -860,62 +859,37 @@
     .history-item:active .history-item-delete { opacity: 1; }
     .history-item-delete svg { width: 14px; height: 14px; fill: currentColor; }
     
-    /* New video notification banner */
-    .new-video-banner {
+    /* New Video Alert */
+    .new-video-alert {
       position: fixed;
       top: 60px;
       left: 50%;
       transform: translateX(-50%) translateY(-100px);
       background: linear-gradient(135deg, #22c55e, #16a34a);
       padding: 12px 20px;
-      border-radius: 30px;
+      border-radius: 25px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       z-index: 600;
       box-shadow: 0 4px 20px rgba(34, 197, 94, 0.5);
       transition: transform 0.3s ease;
       max-width: 90%;
-      cursor: pointer;
     }
-    .new-video-banner.show { transform: translateX(-50%) translateY(0); }
-    .new-video-banner svg { width: 24px; height: 24px; fill: #fff; flex-shrink: 0; }
-    .new-video-banner-text { flex: 1; min-width: 0; }
-    .new-video-banner-title { color: #fff; font-size: 12px; font-weight: 600; }
-    .new-video-banner-name { 
-      color: rgba(255,255,255,0.9); 
-      font-size: 11px; 
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
-    }
-    .new-video-banner .play-btn {
+    .new-video-alert.show { transform: translateX(-50%) translateY(0); }
+    .new-video-alert svg { width: 20px; height: 20px; fill: #fff; flex-shrink: 0; }
+    .new-video-alert span { color: #fff; font-size: 13px; font-weight: 500; }
+    .new-video-alert button {
       background: #fff;
       color: #16a34a;
       border: none;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 6px 14px;
+      border-radius: 15px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      white-space: nowrap;
     }
-    .new-video-banner .play-btn svg { width: 14px; height: 14px; fill: currentColor; }
-    .new-video-banner .close-btn {
-      background: rgba(255,255,255,0.25);
-      border: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .new-video-banner .close-btn svg { width: 14px; height: 14px; fill: #fff; }
   </style>
 </head>
 <body>
@@ -939,14 +913,14 @@
           <div class="video-title" id="vTitle">Loading...</div>
           <div class="video-count" id="vCount">-/-</div>
         </div>
+        <button class="nav-btn notify-btn" id="notifyBtn" title="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </button>
         <button class="nav-btn search-btn" id="searchBtn" title="Search Videos">
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         </button>
         <button class="nav-btn history-btn" id="historyBtn" title="Watch History">
           <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-        </button>
-        <button class="nav-btn notif-btn" id="notifBtn" title="Notifications">
-          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
         </button>
         <button class="nav-btn refresh-btn" id="refreshBtn" title="Refresh Playlist">
           <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
@@ -1064,18 +1038,19 @@
   <div class="toast" id="toast"></div>
   <div class="status" id="status"></div>
   
-  <!-- New Video Banner -->
-  <div class="new-video-banner" id="newVideoBanner">
+  <!-- New Video Alert -->
+  <div class="new-video-alert" id="newVideoAlert">
     <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    <div class="new-video-banner-text">
-      <div class="new-video-banner-title">New Video Added!</div>
-      <div class="new-video-banner-name" id="newVideoName">Video Title</div>
-    </div>
-    <button class="play-btn" id="playNewVideo">
-      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-      Play
-    </button>
-    <button class="close-btn" id="closeNewBanner">
+    <span id="newVideoText">New video added!</span>
+    <button id="watchNewVideo">Watch</button>
+  </div>
+  
+  <!-- Notification Permission Bar -->
+  <div class="notify-bar hide" id="notifyBar">
+    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    <span>Get notified when new videos are added</span>
+    <button class="n-btn" id="enableNotify">Enable</button>
+    <button class="n-close" id="closeNotifyBar">
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
   </div>
@@ -1088,21 +1063,12 @@
       <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </button>
   </div>
-  
-  <!-- Notification Permission Bar -->
-  <div class="notif-bar hide" id="notifBar">
-    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    <span>Get notified when new videos are added</span>
-    <button class="n-btn" id="enableNotif">Enable</button>
-    <button class="n-close" id="closeNotifBar">
-      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-    </button>
-  </div>
 
   <script>
     // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const AUTO_REFRESH_INTERVAL = 15000;
+    const BACKGROUND_CHECK_INTERVAL = 60000; // Check every minute in background
     
     // ===== YOUTUBE API KEY =====
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
@@ -1126,60 +1092,47 @@
     let isSearching = false;
     let searchHistory = [];
     let watchHistory = [];
-    let knownVideoIds = new Set();
-    let notificationsEnabled = false;
-    let newVideoQueue = [];
     let swRegistration = null;
+    let notificationsEnabled = false;
+    let lastKnownVideoIds = new Set();
+    let newVideoIds = new Set();
+    let latestNewVideo = null;
     
-    // Load history from localStorage on startup
-    function loadHistoryFromStorage() {
+    // Load data from localStorage
+    function loadFromStorage() {
       try {
         const savedSearchHistory = localStorage.getItem('vp_search_history');
-        if (savedSearchHistory) {
-          searchHistory = JSON.parse(savedSearchHistory);
-        }
+        if (savedSearchHistory) searchHistory = JSON.parse(savedSearchHistory);
+        
         const savedWatchHistory = localStorage.getItem('vp_watch_history');
-        if (savedWatchHistory) {
-          watchHistory = JSON.parse(savedWatchHistory);
-        }
-        const savedKnownVideos = localStorage.getItem('vp_known_videos');
-        if (savedKnownVideos) {
-          knownVideoIds = new Set(JSON.parse(savedKnownVideos));
-        }
-        console.log('[HISTORY] Loaded', searchHistory.length, 'search items,', watchHistory.length, 'watch items,', knownVideoIds.size, 'known videos');
+        if (savedWatchHistory) watchHistory = JSON.parse(savedWatchHistory);
+        
+        const savedVideoIds = localStorage.getItem('vp_known_videos');
+        if (savedVideoIds) lastKnownVideoIds = new Set(JSON.parse(savedVideoIds));
+        
+        const savedNotifyPref = localStorage.getItem('vp_notifications');
+        notificationsEnabled = savedNotifyPref === 'true';
+        
+        console.log('[STORAGE] Loaded data');
       } catch(e) {
-        console.error('[HISTORY] Failed to load from storage:', e);
-        searchHistory = [];
-        watchHistory = [];
-        knownVideoIds = new Set();
+        console.error('[STORAGE] Load error:', e);
       }
     }
     
-    // Save known videos to localStorage
-    function saveKnownVideos() {
-      try {
-        localStorage.setItem('vp_known_videos', JSON.stringify([...knownVideoIds]));
-      } catch(e) {
-        console.error('[STORAGE] Failed to save known videos:', e);
-      }
-    }
-    
-    // Save search history to localStorage
     function saveSearchHistory() {
-      try {
-        localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
-      } catch(e) {
-        console.error('[HISTORY] Failed to save search history:', e);
-      }
+      try { localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10))); } catch(e) {}
     }
     
-    // Save watch history to localStorage
     function saveWatchHistory() {
-      try {
-        localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
-      } catch(e) {
-        console.error('[HISTORY] Failed to save watch history:', e);
-      }
+      try { localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50))); } catch(e) {}
+    }
+    
+    function saveKnownVideos() {
+      try { localStorage.setItem('vp_known_videos', JSON.stringify([...lastKnownVideoIds])); } catch(e) {}
+    }
+    
+    function saveNotifyPref() {
+      try { localStorage.setItem('vp_notifications', notificationsEnabled.toString()); } catch(e) {}
     }
     
     // ===== HELPERS =====
@@ -1215,9 +1168,9 @@
     const historyContent = $('historyContent');
     const searchHistorySection = $('searchHistorySection');
     const searchHistoryChips = $('searchHistoryChips');
-    const notifBtn = $('notifBtn');
-    const notifBarEl = $('notifBar');
-    const newVideoBanner = $('newVideoBanner');
+    const notifyBar = $('notifyBar');
+    const notifyBtn = $('notifyBtn');
+    const newVideoAlert = $('newVideoAlert');
     
     function fmt(s) {
       if (!s || isNaN(s)) return '0:00';
@@ -1274,22 +1227,16 @@
     function extractChannelId(url) {
       if (!url) return null;
       url = url.trim();
-      
       let match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
       if (match) return match[1];
-      
       match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
-      
       match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'handle', value: match[1] };
-      
       match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'custom', value: match[1] };
-      
       match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'user', value: match[1] };
-      
       return null;
     }
     
@@ -1303,46 +1250,14 @@
       return hash.toString();
     }
     
-    // ===== NOTIFICATIONS =====
-    function checkNotificationSupport() {
-      return 'Notification' in window;
-    }
-    
-    function updateNotifButtonState() {
-      if (!checkNotificationSupport()) {
-        notifBtn.classList.add('denied');
-        notifBtn.title = 'Notifications not supported';
-        return;
-      }
-      
-      const permission = Notification.permission;
-      if (permission === 'granted') {
-        notifBtn.classList.add('enabled');
-        notifBtn.classList.remove('denied');
-        notifBtn.title = 'Notifications enabled';
-        notificationsEnabled = true;
-      } else if (permission === 'denied') {
-        notifBtn.classList.add('denied');
-        notifBtn.classList.remove('enabled');
-        notifBtn.title = 'Notifications blocked';
-        notificationsEnabled = false;
-      } else {
-        notifBtn.classList.remove('enabled', 'denied');
-        notifBtn.title = 'Enable notifications';
-        notificationsEnabled = false;
-      }
-    }
-    
+    // ===== NOTIFICATION FUNCTIONS =====
     async function requestNotificationPermission() {
-      if (!checkNotificationSupport()) {
-        msg('Notifications not supported in this browser');
+      if (!('Notification' in window)) {
+        msg('Notifications not supported');
         return false;
       }
       
       if (Notification.permission === 'granted') {
-        notificationsEnabled = true;
-        updateNotifButtonState();
-        msg('Notifications already enabled!');
         return true;
       }
       
@@ -1351,121 +1266,109 @@
         return false;
       }
       
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+    
+    async function enableNotifications() {
+      const granted = await requestNotificationPermission();
+      
+      if (granted) {
+        notificationsEnabled = true;
+        saveNotifyPref();
+        updateNotifyButton();
+        notifyBar.classList.add('hide');
+        msg('🔔 Notifications enabled!');
+        
+        // Register periodic sync if available
+        if (swRegistration && 'periodicSync' in swRegistration) {
+          try {
+            await swRegistration.periodicSync.register('check-new-videos', {
+              minInterval: 60 * 1000 // 1 minute minimum
+            });
+            console.log('[NOTIFY] Periodic sync registered');
+          } catch (e) {
+            console.log('[NOTIFY] Periodic sync not available:', e);
+          }
+        }
+        
+        // Tell service worker to start checking
+        if (swRegistration && swRegistration.active) {
+          swRegistration.active.postMessage({ 
+            type: 'UPDATE_VIDEOS', 
+            videos: videos.map(v => ({ id: v.id, title: v.title }))
+          });
+          swRegistration.active.postMessage({ type: 'START_CHECKING' });
+        }
+        
+        // Show test notification
+        setTimeout(() => {
+          showLocalNotification('Notifications Active! 🎬', 'You will be notified when new videos are added.');
+        }, 500);
+      } else {
+        msg('Please allow notifications to get updates');
+      }
+    }
+    
+    function disableNotifications() {
+      notificationsEnabled = false;
+      saveNotifyPref();
+      updateNotifyButton();
+      msg('🔕 Notifications disabled');
+    }
+    
+    function updateNotifyButton() {
+      if (notificationsEnabled && Notification.permission === 'granted') {
+        notifyBtn.classList.add('on');
+      } else {
+        notifyBtn.classList.remove('on');
+      }
+    }
+    
+    function showNotifyBarIfNeeded() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted' && notificationsEnabled) return;
+      if (Notification.permission === 'denied') return;
+      if (localStorage.getItem('vp_notify_dismissed')) return;
+      
+      setTimeout(() => {
+        notifyBar.classList.remove('hide');
+      }, 3000);
+    }
+    
+    async function showLocalNotification(title, body, videoId = null) {
+      if (Notification.permission !== 'granted') return;
+      
       try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          notificationsEnabled = true;
-          updateNotifButtonState();
-          notifBarEl.classList.add('hide');
-          msg('Notifications enabled! You\'ll be notified of new videos.');
-          
-          // Show test notification
-          showNotification('Notifications Enabled!', 'You will now receive alerts when new videos are added.');
-          return true;
+        if (swRegistration) {
+          await swRegistration.showNotification(title, {
+            body: body,
+            icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+            badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+            vibrate: [200, 100, 200],
+            tag: videoId ? 'video-' + videoId : 'general',
+            renotify: true,
+            data: { videoId: videoId }
+          });
         } else {
-          msg('Notification permission denied');
-          updateNotifButtonState();
-          return false;
+          new Notification(title, {
+            body: body,
+            icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png'
+          });
         }
       } catch (e) {
-        console.error('[NOTIF] Error requesting permission:', e);
-        msg('Failed to request notification permission');
-        return false;
+        console.error('[NOTIFY] Error:', e);
       }
     }
     
-    function showNotification(title, body, videoId = null, videoTitle = null) {
-      if (!notificationsEnabled || Notification.permission !== 'granted') {
-        console.log('[NOTIF] Notifications not enabled, showing in-app banner');
-        showInAppBanner(videoTitle || body, videoId);
-        return;
-      }
+    function showNewVideoInAppAlert(video) {
+      latestNewVideo = video;
+      $('newVideoText').textContent = video.title || 'New video added!';
+      newVideoAlert.classList.add('show');
       
-      // Try using service worker for notification (works in background)
-      if (swRegistration && 'showNotification' in swRegistration) {
-        swRegistration.showNotification(title, {
-          body: body,
-          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          tag: 'new-video-' + (videoId || Date.now()),
-          vibrate: [200, 100, 200],
-          requireInteraction: true,
-          actions: [
-            { action: 'play', title: '▶ Play Now' },
-            { action: 'dismiss', title: 'Dismiss' }
-          ],
-          data: {
-            videoId: videoId,
-            videoTitle: videoTitle,
-            url: location.href
-          }
-        }).catch(e => {
-          console.log('[NOTIF] SW notification failed, using fallback:', e);
-          showFallbackNotification(title, body, videoId, videoTitle);
-        });
-      } else {
-        showFallbackNotification(title, body, videoId, videoTitle);
-      }
-      
-      // Also show in-app banner
-      if (videoId && videoTitle) {
-        showInAppBanner(videoTitle, videoId);
-      }
-    }
-    
-    function showFallbackNotification(title, body, videoId, videoTitle) {
-      try {
-        const notif = new Notification(title, {
-          body: body,
-          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          tag: 'new-video-' + (videoId || Date.now()),
-          requireInteraction: true
-        });
-        
-        notif.onclick = () => {
-          window.focus();
-          if (videoId) {
-            playVideoById(videoId, videoTitle);
-          }
-          notif.close();
-        };
-      } catch (e) {
-        console.error('[NOTIF] Fallback notification failed:', e);
-      }
-    }
-    
-    function showInAppBanner(videoTitle, videoId) {
-      const banner = $('newVideoBanner');
-      const nameEl = $('newVideoName');
-      
-      nameEl.textContent = videoTitle || 'New video added';
-      banner.dataset.videoId = videoId || '';
-      banner.dataset.videoTitle = videoTitle || '';
-      
-      banner.classList.add('show');
-      
-      // Auto hide after 10 seconds
       setTimeout(() => {
-        banner.classList.remove('show');
-      }, 10000);
-    }
-    
-    function playVideoById(videoId, videoTitle) {
-      if (!player || !ready) return;
-      
-      // Check if video is in playlist
-      const videoIndex = videos.findIndex(v => v.id === videoId);
-      if (videoIndex >= 0) {
-        idx = videoIndex;
-        loadVid();
-      } else {
-        // Play directly if not in playlist
-        loaderText.textContent = 'Loading...';
-        loader.classList.remove('hide');
-        vTitle.textContent = videoTitle || 'Playing video';
-        vCount.textContent = 'New Video';
-        player.loadVideoById({ videoId: videoId, suggestedQuality: 'default' });
-      }
+        newVideoAlert.classList.remove('show');
+      }, 8000);
     }
     
     // ===== UI VISIBILITY =====
@@ -1593,10 +1496,7 @@
     async function resolveChannelToId(channelInfo) {
       if (typeof channelInfo === 'string') return channelInfo;
       
-      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
-        console.log('[CHANNEL] API key not set, cannot resolve channel');
-        return null;
-      }
+      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") return null;
       
       try {
         let apiUrl = '';
@@ -1613,19 +1513,14 @@
         const res = await fetch(apiUrl);
         const data = await res.json();
         
-        if (data.error) {
-          console.error('[CHANNEL] API error:', data.error.message);
-          return null;
-        }
+        if (data.error) return null;
         
         if (channelInfo.type === 'custom' && data.items && data.items[0]) {
           return data.items[0].snippet.channelId;
         } else if (data.items && data.items[0]) {
           return data.items[0].id;
         }
-      } catch (e) {
-        console.error('[CHANNEL] Error resolving:', e);
-      }
+      } catch (e) {}
       
       return null;
     }
@@ -1645,14 +1540,12 @@
       }
       
       const allResults = [];
-      
       const resolvedIds = [];
+      
       for (const ch of channelIds) {
         const resolved = await resolveChannelToId(ch);
         if (resolved) resolvedIds.push(resolved);
       }
-      
-      console.log('[SEARCH] Searching in', resolvedIds.length, 'resolved channels');
       
       for (const channelId of resolvedIds) {
         try {
@@ -1662,7 +1555,6 @@
           const data = await res.json();
           
           if (data.error) {
-            console.error('[SEARCH] API Error:', data.error.message);
             if (data.error.code === 403) {
               msg('API quota exceeded or key invalid');
               return allResults;
@@ -1681,9 +1573,7 @@
               });
             }
           }
-        } catch (e) {
-          console.error('[SEARCH] Error:', e);
-        }
+        } catch (e) {}
       }
       
       if (allResults.length > 0) {
@@ -1703,9 +1593,7 @@
               }
             }
           }
-        } catch (e) {
-          console.log('[SEARCH] Failed to get details:', e);
-        }
+        } catch (e) {}
       }
       
       const unique = [];
@@ -1759,13 +1647,9 @@
     
     function addToWatchHistory(video) {
       watchHistory = watchHistory.filter(v => v.id !== video.id);
-      watchHistory.unshift({
-        ...video,
-        watchedAt: Date.now()
-      });
+      watchHistory.unshift({ ...video, watchedAt: Date.now() });
       if (watchHistory.length > 50) watchHistory = watchHistory.slice(0, 50);
       saveWatchHistory();
-      console.log('[HISTORY] Added to watch history:', video.title, '- Total:', watchHistory.length);
     }
     
     function renderSearchHistory() {
@@ -1800,7 +1684,7 @@
         historyContent.innerHTML = `
           <div class="history-empty">
             <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-            <p>No watch history yet.<br>Videos you play from search will appear here.</p>
+            <p>No watch history yet.</p>
           </div>
         `;
         return;
@@ -1838,12 +1722,11 @@
       searchResults.innerHTML = `
         <div class="search-empty">
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <p>Enter a search term to find videos<br>from your channels</p>
+          <p>Enter a search term to find videos</p>
         </div>
       `;
     }
     
-    // ===== HISTORY UI =====
     function openHistory() {
       historyModal.classList.add('open');
       renderWatchHistory();
@@ -1856,11 +1739,7 @@
     
     async function performSearch() {
       const query = searchInput.value.trim();
-      if (!query) {
-        msg('Enter a search term');
-        return;
-      }
-      
+      if (!query) { msg('Enter a search term'); return; }
       if (isSearching) return;
       isSearching = true;
       
@@ -1877,7 +1756,6 @@
         const results = await searchVideosInChannels(query);
         renderSearchResults(results, query);
       } catch (e) {
-        console.error('[SEARCH] Error:', e);
         searchResults.innerHTML = `
           <div class="search-empty">
             <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -1889,7 +1767,6 @@
       isSearching = false;
     }
     
-    // Search result click
     searchResults.onclick = e => {
       const item = e.target.closest('.search-result-item');
       if (item) {
@@ -1899,14 +1776,7 @@
         const duration = item.querySelector('.search-thumb .duration')?.textContent || '';
         const channel = item.querySelector('.search-result-channel')?.textContent || '';
         
-        addToWatchHistory({
-          id: videoId,
-          title: videoTitle,
-          thumbnail: thumbnail,
-          duration: duration,
-          channel: channel
-        });
-        
+        addToWatchHistory({ id: videoId, title: videoTitle, thumbnail, duration, channel });
         closeSearch();
         
         if (player && ready) {
@@ -1920,17 +1790,14 @@
       }
     };
     
-    // Search history chip click
     searchHistoryChips.onclick = e => {
       const chip = e.target.closest('.search-chip');
       if (chip) {
-        const query = chip.dataset.query;
-        searchInput.value = query;
+        searchInput.value = chip.dataset.query;
         performSearch();
       }
     };
     
-    // Clear search history
     $('clearSearchHistory').onclick = e => {
       e.stopPropagation();
       searchHistory = [];
@@ -1939,7 +1806,6 @@
       msg('Search history cleared');
     };
     
-    // History item click
     historyContent.onclick = e => {
       const deleteBtn = e.target.closest('.history-item-delete');
       if (deleteBtn) {
@@ -1956,9 +1822,9 @@
       if (item) {
         const videoId = item.dataset.id;
         const videoTitle = item.dataset.title;
-        
         const index = parseInt(item.dataset.index);
         const video = watchHistory[index];
+        
         watchHistory.splice(index, 1);
         video.watchedAt = Date.now();
         watchHistory.unshift(video);
@@ -1977,7 +1843,6 @@
       }
     };
     
-    // Clear all watch history
     $('clearHistory').onclick = e => {
       e.stopPropagation();
       if (confirm('Clear all watch history?')) {
@@ -2035,7 +1900,7 @@
     }
     
     // ===== LOAD DATA =====
-    async function loadData(showLoader = true, isInitialLoad = false) {
+    async function loadData(showLoader = true) {
       try {
         if (showLoader) {
           loaderText.textContent = 'Loading playlist...';
@@ -2049,26 +1914,49 @@
           return false;
         }
         
-        const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
-        const dataChanged = newHash !== lastDataHash;
-        lastDataHash = newHash;
-        
-        // Detect new videos
+        // Check for new videos
+        const currentVideoIds = new Set(newVideos.map(v => v.id));
         const detectedNewVideos = [];
-        if (!isInitialLoad && knownVideoIds.size > 0) {
+        
+        if (lastKnownVideoIds.size > 0) {
           for (const video of newVideos) {
-            if (!knownVideoIds.has(video.id)) {
+            if (!lastKnownVideoIds.has(video.id)) {
               detectedNewVideos.push(video);
-              console.log('[NEW VIDEO] Detected:', video.id, video.title);
+              newVideoIds.add(video.id);
             }
+          }
+          
+          if (detectedNewVideos.length > 0) {
+            console.log('[NEW] Found', detectedNewVideos.length, 'new videos!');
+            
+            // Show notification for the first new video
+            const firstNew = detectedNewVideos[0];
+            const title = firstNew.title || 'New Video';
+            
+            if (notificationsEnabled && Notification.permission === 'granted') {
+              showLocalNotification('🎬 New Video Added!', title, firstNew.id);
+            }
+            
+            // Show in-app alert
+            showNewVideoInAppAlert(firstNew);
           }
         }
         
         // Update known videos
-        for (const video of newVideos) {
-          knownVideoIds.add(video.id);
-        }
+        lastKnownVideoIds = currentVideoIds;
         saveKnownVideos();
+        
+        // Update service worker with current videos
+        if (swRegistration && swRegistration.active) {
+          swRegistration.active.postMessage({ 
+            type: 'UPDATE_VIDEOS', 
+            videos: newVideos.map(v => ({ id: v.id, title: v.title }))
+          });
+        }
+        
+        const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
+        const dataChanged = newHash !== lastDataHash;
+        lastDataHash = newHash;
         
         if (dataChanged || videos.length === 0) {
           const currentId = videos[idx]?.id;
@@ -2093,23 +1981,15 @@
           updTitle();
           $('plCount').textContent = videos.length;
           
-          fetchAllTitles().then(() => {
-            // After fetching titles, notify about new videos
-            if (detectedNewVideos.length > 0) {
-              notifyNewVideos(detectedNewVideos);
-            }
-          });
+          fetchAllTitles();
           
-          if (!showLoader && detectedNewVideos.length === 0) {
-            msg('Playlist updated! (' + videos.length + ' videos)');
+          if (!showLoader && detectedNewVideos.length > 0) {
+            msg(`${detectedNewVideos.length} new video(s) added!`);
+          } else if (!showLoader) {
+            msg('Playlist up to date (' + videos.length + ' videos)');
           }
           
           return true;
-        }
-        
-        // Still notify if new videos detected even if hash hasn't changed significantly
-        if (detectedNewVideos.length > 0) {
-          notifyNewVideos(detectedNewVideos);
         }
         
         return false;
@@ -2121,40 +2001,6 @@
       }
     }
     
-    async function notifyNewVideos(newVideos) {
-      console.log('[NOTIFY] Notifying about', newVideos.length, 'new videos');
-      
-      for (const video of newVideos) {
-        // Fetch title if not available
-        let title = video.title;
-        if (!title || title === 'Loading...') {
-          title = await fetchYouTubeTitle(video.id);
-          if (title) {
-            video.title = title;
-            // Update in main videos array
-            const idx = videos.findIndex(v => v.id === video.id);
-            if (idx >= 0) videos[idx].title = title;
-          }
-        }
-        
-        const finalTitle = title || 'New Video';
-        
-        console.log('[NOTIFY] New video:', finalTitle);
-        showNotification(
-          '🎬 New Video Added!',
-          finalTitle,
-          video.id,
-          finalTitle
-        );
-        
-        // Small delay between notifications
-        await new Promise(r => setTimeout(r, 500));
-      }
-      
-      // Re-render list to show new badges
-      renderList();
-    }
-    
     function showErr(m) {
       loader.innerHTML = `<div class="err-box"><p>${m}</p><button onclick="location.reload()">Retry</button></div>`;
     }
@@ -2162,7 +2008,7 @@
     function renderList() {
       drawerList.innerHTML = videos.map((v, i) => {
         const isLoading = v.title === 'Loading...' || !v.title;
-        const isNew = v.isNew;
+        const isNew = newVideoIds.has(v.id);
         return `<div class="pl-item${i === idx ? ' active' : ''}${isNew ? ' new' : ''}" data-i="${i}">
           <span class="num">${i + 1}</span>
           <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
@@ -2218,6 +2064,11 @@
         loader.classList.add('hide');
         setPlayState(true);
         startUpd();
+        // Mark as watched (remove from new)
+        if (videos[idx]) {
+          newVideoIds.delete(videos[idx].id);
+          renderList();
+        }
       } else if (s === YT.PlayerState.PAUSED) {
         setPlayState(false);
         stopUpd();
@@ -2325,13 +2176,12 @@
     async function manualRefresh() {
       refreshBtn.classList.add('spinning');
       msg('Refreshing playlist...');
-      const changed = await loadData(false, false);
+      await loadData(false);
       refreshBtn.classList.remove('spinning');
-      if (!changed) msg('Playlist is up to date');
     }
     
     async function autoRefresh() {
-      try { await loadData(false, false); } catch (e) {}
+      try { await loadData(false); } catch (e) {}
     }
     
     // ===== PROGRESS BAR =====
@@ -2410,39 +2260,37 @@
     $('historyClose').onclick = e => { e.stopPropagation(); closeHistory(); };
     drawerBg.onclick = closeDrawer;
     
-    // Notification button
-    notifBtn.onclick = e => {
+    // Notification events
+    $('notifyBtn').onclick = e => {
       e.stopPropagation();
-      requestNotificationPermission();
-    };
-    
-    // Notification bar buttons
-    $('enableNotif').onclick = e => {
-      e.stopPropagation();
-      requestNotificationPermission();
-    };
-    
-    $('closeNotifBar').onclick = e => {
-      e.stopPropagation();
-      notifBarEl.classList.add('hide');
-      try { localStorage.setItem('vp_notif_dismissed', 'true'); } catch(e) {}
-    };
-    
-    // New video banner
-    $('playNewVideo').onclick = e => {
-      e.stopPropagation();
-      const banner = $('newVideoBanner');
-      const videoId = banner.dataset.videoId;
-      const videoTitle = banner.dataset.videoTitle;
-      if (videoId) {
-        playVideoById(videoId, videoTitle);
+      if (notificationsEnabled && Notification.permission === 'granted') {
+        disableNotifications();
+      } else {
+        enableNotifications();
       }
-      banner.classList.remove('show');
     };
     
-    $('closeNewBanner').onclick = e => {
+    $('enableNotify').onclick = e => {
       e.stopPropagation();
-      $('newVideoBanner').classList.remove('show');
+      enableNotifications();
+    };
+    
+    $('closeNotifyBar').onclick = e => {
+      e.stopPropagation();
+      notifyBar.classList.add('hide');
+      localStorage.setItem('vp_notify_dismissed', 'true');
+    };
+    
+    $('watchNewVideo').onclick = e => {
+      e.stopPropagation();
+      newVideoAlert.classList.remove('show');
+      if (latestNewVideo) {
+        const newIdx = videos.findIndex(v => v.id === latestNewVideo.id);
+        if (newIdx >= 0) {
+          idx = newIdx;
+          loadVid();
+        }
+      }
     };
     
     searchInput.addEventListener('keydown', e => {
@@ -2506,7 +2354,7 @@
         case 'p': case 'P': prev(); break;
         case 'r': case 'R': manualRefresh(); break;
         case 's': case 'S': openSearch(); break;
-        case 'Escape': closeSearch(); closeDrawer(); closeHistory(); break;
+        case 'Escape': closeSearch(); closeHistory(); closeDrawer(); break;
       }
     };
     
@@ -2519,9 +2367,10 @@
     // Listen for messages from service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', event => {
-        console.log('[SW MESSAGE]', event.data);
-        if (event.data && event.data.type === 'PLAY_VIDEO') {
-          playVideoById(event.data.videoId, event.data.videoTitle);
+        console.log('[APP] Message from SW:', event.data);
+        if (event.data.type === 'NEW_VIDEOS') {
+          // Refresh playlist
+          loadData(false);
         }
       });
     }
@@ -2554,76 +2403,83 @@
     $('closeInstall').onclick = () => installBar.classList.add('hide');
     
     // ===== SERVICE WORKER =====
-    if ('serviceWorker' in navigator) {
-      // Clear old registrations first
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let registration of registrations) registration.unregister();
-      });
+    async function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) {
+        console.log('[SW] Service workers not supported');
+        return;
+      }
       
-      // Register new service worker
-      setTimeout(() => {
-        navigator.serviceWorker.register('sw.js?v=' + Date.now())
-          .then(registration => {
-            console.log('[SW] Registered:', registration);
-            swRegistration = registration;
-          })
-          .catch(err => {
-            console.error('[SW] Registration failed:', err);
+      try {
+        // Clear old registrations
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) {
+          await reg.unregister();
+        }
+        
+        // Clear caches
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (let key of keys) {
+            await caches.delete(key);
+          }
+        }
+        
+        // Register new service worker
+        swRegistration = await navigator.serviceWorker.register('sw.js?v=' + Date.now());
+        console.log('[SW] Registered:', swRegistration);
+        
+        // Wait for activation
+        if (swRegistration.installing) {
+          await new Promise(resolve => {
+            swRegistration.installing.addEventListener('statechange', e => {
+              if (e.target.state === 'activated') resolve();
+            });
           });
-      }, 1000);
-    }
-    
-    if ('caches' in window) {
-      caches.keys().then(keys => { keys.forEach(key => caches.delete(key)); });
+        }
+        
+        // Try to register periodic sync
+        if ('periodicSync' in swRegistration && notificationsEnabled) {
+          try {
+            const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+            if (status.state === 'granted') {
+              await swRegistration.periodicSync.register('check-new-videos', {
+                minInterval: 60 * 1000
+              });
+              console.log('[SW] Periodic sync registered');
+            }
+          } catch (e) {
+            console.log('[SW] Periodic sync not available');
+          }
+        }
+        
+      } catch (e) {
+        console.error('[SW] Registration failed:', e);
+      }
     }
     
     // ===== INIT =====
     async function init() {
       console.log('[INIT] Starting Video Player...');
       
-      // Load history from localStorage first
-      loadHistoryFromStorage();
+      loadFromStorage();
+      updateNotifyButton();
       
-      // Check notification support and permission
-      updateNotifButtonState();
-      
-      // Show notification permission bar if not granted and not dismissed
-      if (checkNotificationSupport() && Notification.permission === 'default') {
-        try {
-          const dismissed = localStorage.getItem('vp_notif_dismissed');
-          if (!dismissed) {
-            setTimeout(() => {
-              notifBarEl.classList.remove('hide');
-            }, 3000);
-          }
-        } catch(e) {}
-      }
-      
-      // Check API key
-      if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
-        console.warn('[INIT] YouTube API key not configured! Search will not work.');
-      }
-      
-      // Initial load - mark as initial to not trigger notifications
-      const isFirstLoad = knownVideoIds.size === 0;
-      await loadData(true, isFirstLoad);
+      await loadData(true);
       
       if (videos.length > 0) {
         loaderText.textContent = 'Loading player...';
         loadAPI();
       }
       
-      // Auto refresh every 15 seconds
-      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
+      await registerServiceWorker();
       
-      // Check URL for video parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      const videoParam = urlParams.get('v');
-      if (videoParam) {
-        setTimeout(() => {
-          playVideoById(videoParam, null);
-        }, 2000);
-      }
+      // Show notification prompt after a delay
+      setTimeout(() => {
+        showNotifyBarIfNeeded();
+      }, 5000);
+      
+      // Auto refresh
+      setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
     }
     
     init();
