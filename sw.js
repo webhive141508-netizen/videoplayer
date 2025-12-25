@@ -1,42 +1,126 @@
-// Service Worker with Push Notifications for New Videos
+// Service Worker with Background Notification Support
+// Checks for new videos and sends notifications
+
+const SW_VERSION = '2.0.0';
 const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
-const CHECK_INTERVAL = 10000; // Check every 60 seconds when active
+const CHECK_INTERVAL = 60000; // 1 minute
 
-// Store for tracking videos
-let lastKnownVideos = [];
+let knownVideoIds = new Set();
+let config = { sheetId: SHEET_ID };
 
-self.addEventListener('install', () => {
-  console.log('[SW] Install - skip waiting');
+console.log('[SW] Service Worker v' + SW_VERSION + ' loading...');
+
+// ===== INSTALL =====
+self.addEventListener('install', event => {
+  console.log('[SW] Installing...');
   self.skipWaiting();
 });
 
+// ===== ACTIVATE =====
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate - claim clients');
+  console.log('[SW] Activating...');
   event.waitUntil(
     Promise.all([
-      caches.keys().then(keys => Promise.all(keys.map(key => caches.delete(key)))),
+      // Clear old caches
+      caches.keys().then(keys => {
+        return Promise.all(keys.map(key => {
+          console.log('[SW] Deleting cache:', key);
+          return caches.delete(key);
+        }));
+      }),
+      // Take control of all clients
       self.clients.claim(),
-      // Load last known videos from IndexedDB
-      loadLastKnownVideos()
+      // Load known video IDs from IndexedDB
+      loadKnownVideoIds()
     ])
   );
 });
 
-// Network only - no caching for fetch
+// ===== FETCH - Network Only =====
 self.addEventListener('fetch', event => {
+  // Let all requests go to network - no caching
   return;
 });
 
-// Handle push notifications
+// ===== MESSAGE FROM CLIENT =====
+self.addEventListener('message', event => {
+  console.log('[SW] Message received:', event.data);
+  
+  if (event.data.type === 'CONFIG') {
+    config.sheetId = event.data.sheetId || SHEET_ID;
+    console.log('[SW] Config updated, Sheet ID:', config.sheetId);
+  }
+  
+  if (event.data.type === 'CHECK_NOW') {
+    checkForNewVideos();
+  }
+  
+  if (event.data.type === 'SYNC_KNOWN_IDS') {
+    if (event.data.ids) {
+      knownVideoIds = new Set(event.data.ids);
+      saveKnownVideoIds();
+    }
+  }
+});
+
+// ===== NOTIFICATION CLICK =====
+self.addEventListener('notificationclick', event => {
+  console.log('[SW] Notification clicked:', event.action, event.notification.tag);
+  
+  event.notification.close();
+  
+  const videoId = event.notification.data?.videoId;
+  const targetUrl = event.notification.data?.url || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // If there's an existing window, focus it
+        for (const client of clientList) {
+          if (client.url.includes('videoplayer') && 'focus' in client) {
+            // Send message to play the video
+            if (videoId && event.action === 'play') {
+              client.postMessage({
+                type: 'PLAY_VIDEO',
+                videoId: videoId
+              });
+            }
+            return client.focus();
+          }
+        }
+        // Otherwise open a new window
+        if (clients.openWindow) {
+          let url = targetUrl;
+          if (videoId && event.action === 'play') {
+            url += '?play=' + videoId;
+          }
+          return clients.openWindow(url);
+        }
+      })
+  );
+});
+
+// ===== PERIODIC BACKGROUND SYNC =====
+self.addEventListener('periodicsync', event => {
+  console.log('[SW] Periodic sync event:', event.tag);
+  
+  if (event.tag === 'check-new-videos') {
+    event.waitUntil(checkForNewVideos());
+  }
+});
+
+// ===== PUSH NOTIFICATIONS (for future server-based push) =====
 self.addEventListener('push', event => {
-  console.log('[SW] Push received');
+  console.log('[SW] Push received:', event.data?.text());
   
-  let data = { title: 'New Video Added!', body: 'Check out the new video', icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png' };
+  let data = { title: 'New Video!', body: 'A new video has been added.' };
   
-  if (event.data) {
-    try {
+  try {
+    if (event.data) {
       data = event.data.json();
-    } catch (e) {
+    }
+  } catch (e) {
+    if (event.data) {
       data.body = event.data.text();
     }
   }
@@ -44,152 +128,71 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+      icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
       badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
       vibrate: [200, 100, 200],
-      tag: 'new-video',
-      renotify: true,
-      data: data.url || './',
+      data: data,
       actions: [
-        { action: 'open', title: 'Watch Now' },
-        { action: 'close', title: 'Dismiss' }
+        { action: 'play', title: '▶ Play Now' },
+        { action: 'dismiss', title: 'Dismiss' }
       ]
     })
   );
 });
 
-// Handle notification clicks
-self.addEventListener('notificationclick', event => {
-  console.log('[SW] Notification clicked');
-  event.notification.close();
-  
-  if (event.action === 'close') return;
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      // If app is already open, focus it
-      for (const client of clientList) {
-        if (client.url.includes('videoplayer') && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      // Otherwise open new window
-      if (clients.openWindow) {
-        return clients.openWindow(event.notification.data || './');
-      }
-    })
-  );
-});
+// ===== HELPER FUNCTIONS =====
 
-// Periodic Background Sync (for checking new videos)
-self.addEventListener('periodicsync', event => {
-  console.log('[SW] Periodic sync:', event.tag);
+// Extract video ID from YouTube URL
+function getVideoId(url) {
+  if (!url) return null;
+  url = String(url).trim();
   
-  if (event.tag === 'check-new-videos') {
-    event.waitUntil(checkForNewVideos());
-  }
-});
-
-// Regular sync (fallback)
-self.addEventListener('sync', event => {
-  console.log('[SW] Background sync:', event.tag);
+  let match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (match) return match[1];
   
-  if (event.tag === 'check-videos') {
-    event.waitUntil(checkForNewVideos());
-  }
-});
-
-// Message handler for communication with main app
-self.addEventListener('message', event => {
-  console.log('[SW] Message received:', event.data);
+  match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (match) return match[1];
   
-  if (event.data.type === 'CHECK_VIDEOS') {
-    checkForNewVideos();
-  }
+  match = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  if (match) return match[1];
   
-  if (event.data.type === 'UPDATE_VIDEOS') {
-    lastKnownVideos = event.data.videos || [];
-    saveLastKnownVideos(lastKnownVideos);
-  }
+  match = url.match(/^([a-zA-Z0-9_-]{11})$/);
+  if (match) return match[1];
   
-  if (event.data.type === 'START_CHECKING') {
-    startPeriodicCheck();
-  }
-});
-
-// IndexedDB helpers for storing video state
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('VideoPlayerDB', 1);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = event => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('videos')) {
-        db.createObjectStore('videos', { keyPath: 'key' });
-      }
-    };
-  });
+  return null;
 }
 
-async function saveLastKnownVideos(videos) {
+// Fetch sheet data
+async function fetchSheetData() {
+  const sheetId = config.sheetId || SHEET_ID;
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
+  
+  console.log('[SW] Fetching sheet data...');
+  
   try {
-    const db = await openDB();
-    const tx = db.transaction('videos', 'readwrite');
-    const store = tx.objectStore('videos');
-    
-    await new Promise((resolve, reject) => {
-      const request = store.put({ key: 'lastVideos', videos: videos, timestamp: Date.now() });
-      request.onsuccess = resolve;
-      request.onerror = reject;
+    const response = await fetch(url, { 
+      method: 'GET', 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
     });
     
-    db.close();
-    console.log('[SW] Saved', videos.length, 'videos to IndexedDB');
-  } catch (e) {
-    console.error('[SW] Failed to save videos:', e);
-  }
-}
-
-async function loadLastKnownVideos() {
-  try {
-    const db = await openDB();
-    const tx = db.transaction('videos', 'readonly');
-    const store = tx.objectStore('videos');
-    
-    const result = await new Promise((resolve, reject) => {
-      const request = store.get('lastVideos');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = reject;
-    });
-    
-    db.close();
-    
-    if (result && result.videos) {
-      lastKnownVideos = result.videos;
-      console.log('[SW] Loaded', lastKnownVideos.length, 'videos from IndexedDB');
+    if (!response.ok) {
+      throw new Error('Failed to fetch: ' + response.status);
     }
-  } catch (e) {
-    console.error('[SW] Failed to load videos:', e);
-  }
-}
-
-// Fetch and parse sheet data
-async function fetchSheetVideos() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=link&_=${Date.now()}`;
-  
-  try {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) throw new Error('Fetch failed');
     
     const text = await response.text();
     const jsonStart = text.indexOf('({');
     const jsonEnd = text.lastIndexOf('})');
-    if (jsonStart === -1 || jsonEnd === -1) throw new Error('Invalid format');
     
-    const data = JSON.parse(text.substring(jsonStart + 1, jsonEnd + 1));
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error('Invalid response format');
+    }
+    
+    const jsonStr = text.substring(jsonStart + 1, jsonEnd + 1);
+    const data = JSON.parse(jsonStr);
+    
     const videos = [];
     
     if (data.table && data.table.rows) {
@@ -198,39 +201,42 @@ async function fetchSheetVideos() {
           const titleCell = row.c[0];
           const urlCell = row.c[1];
           
+          let url = '';
           if (urlCell && urlCell.v) {
-            const url = String(urlCell.v).trim();
-            const videoId = extractVideoId(url);
-            
-            if (videoId) {
-              let title = '';
-              if (titleCell && titleCell.v) {
-                title = String(titleCell.v).trim();
-              }
-              videos.push({ id: videoId, title: title || 'New Video' });
+            url = String(urlCell.v).trim();
+          }
+          
+          const videoId = getVideoId(url);
+          if (videoId) {
+            let title = '';
+            if (titleCell && titleCell.v) {
+              title = String(titleCell.v).trim();
             }
+            videos.push({ id: videoId, title: title || 'New Video' });
           }
         }
       }
     }
     
+    console.log('[SW] Found', videos.length, 'videos');
     return videos;
   } catch (e) {
-    console.error('[SW] Fetch error:', e);
-    return null;
+    console.error('[SW] Error fetching sheet:', e);
+    return [];
   }
 }
 
-function extractVideoId(url) {
-  if (!url) return null;
-  let match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  match = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  match = url.match(/^([a-zA-Z0-9_-]{11})$/);
-  if (match) return match[1];
+// Fetch YouTube video title
+async function fetchVideoTitle(videoId) {
+  try {
+    const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+    const data = await response.json();
+    if (data.title) {
+      return data.title;
+    }
+  } catch (e) {
+    console.log('[SW] Failed to fetch title for', videoId);
+  }
   return null;
 }
 
@@ -239,91 +245,211 @@ async function checkForNewVideos() {
   console.log('[SW] Checking for new videos...');
   
   try {
-    const currentVideos = await fetchSheetVideos();
+    const videos = await fetchSheetData();
     
-    if (!currentVideos) {
-      console.log('[SW] Could not fetch videos');
+    if (videos.length === 0) {
+      console.log('[SW] No videos found');
       return;
     }
     
-    console.log('[SW] Current videos:', currentVideos.length, 'Last known:', lastKnownVideos.length);
-    
-    // Find new videos (IDs that weren't in the previous list)
-    const lastIds = new Set(lastKnownVideos.map(v => v.id));
-    const newVideos = currentVideos.filter(v => !lastIds.has(v.id));
-    
-    if (newVideos.length > 0 && lastKnownVideos.length > 0) {
-      console.log('[SW] Found', newVideos.length, 'new videos!');
-      
-      // Show notification for each new video (max 3)
-      const toNotify = newVideos.slice(0, 3);
-      
-      for (const video of toNotify) {
-        await showNewVideoNotification(video);
-      }
-      
-      if (newVideos.length > 3) {
-        await self.registration.showNotification('Multiple New Videos!', {
-          body: `${newVideos.length} new videos have been added`,
-          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          vibrate: [200, 100, 200],
-          tag: 'new-videos-multiple',
-          data: './'
-        });
-      }
-      
-      // Notify the app
-      const clients = await self.clients.matchAll({ type: 'window' });
-      clients.forEach(client => {
-        client.postMessage({ type: 'NEW_VIDEOS', videos: newVideos });
-      });
+    // Load known IDs if not loaded
+    if (knownVideoIds.size === 0) {
+      await loadKnownVideoIds();
     }
     
-    // Update stored videos
-    lastKnownVideos = currentVideos;
-    await saveLastKnownVideos(currentVideos);
+    // Check for new videos
+    const newVideos = [];
+    for (const video of videos) {
+      if (!knownVideoIds.has(video.id)) {
+        newVideos.push(video);
+        knownVideoIds.add(video.id);
+      }
+    }
+    
+    console.log('[SW] New videos found:', newVideos.length);
+    
+    // Send notifications for new videos
+    for (const video of newVideos) {
+      let title = video.title;
+      
+      // Fetch title if not available
+      if (!title || title === 'New Video' || title === 'Loading...') {
+        const fetchedTitle = await fetchVideoTitle(video.id);
+        if (fetchedTitle) {
+          title = fetchedTitle;
+        }
+      }
+      
+      // Show notification
+      await showNewVideoNotification(video.id, title);
+      
+      // Notify all clients
+      await notifyClients(video.id, title);
+    }
+    
+    // Save known IDs
+    if (newVideos.length > 0) {
+      await saveKnownVideoIds();
+    }
     
   } catch (e) {
-    console.error('[SW] Check error:', e);
+    console.error('[SW] Error checking for new videos:', e);
   }
 }
 
-async function showNewVideoNotification(video) {
-  const title = video.title || 'New Video Added!';
+// Show notification for new video
+async function showNewVideoNotification(videoId, title) {
+  console.log('[SW] Showing notification for:', title);
   
-  // Try to get video thumbnail
-  const thumbnail = `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`;
+  try {
+    await self.registration.showNotification('🎬 New Video Added!', {
+      body: title,
+      icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+      badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
+      vibrate: [200, 100, 200],
+      tag: videoId,
+      renotify: true,
+      requireInteraction: false,
+      data: {
+        videoId: videoId,
+        title: title,
+        url: self.registration.scope
+      },
+      actions: [
+        { action: 'play', title: '▶ Play Now' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    });
+    
+    console.log('[SW] Notification shown successfully');
+  } catch (e) {
+    console.error('[SW] Error showing notification:', e);
+  }
+}
+
+// Notify all connected clients
+async function notifyClients(videoId, title) {
+  const allClients = await clients.matchAll({ 
+    type: 'window', 
+    includeUncontrolled: true 
+  });
   
-  return self.registration.showNotification('🎬 New Video Added!', {
-    body: title,
-    icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-    badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-    image: thumbnail,
-    vibrate: [200, 100, 200, 100, 200],
-    tag: 'new-video-' + video.id,
-    renotify: true,
-    requireInteraction: true,
-    data: { videoId: video.id, url: './' },
-    actions: [
-      { action: 'watch', title: '▶️ Watch Now' },
-      { action: 'dismiss', title: 'Dismiss' }
-    ]
+  console.log('[SW] Notifying', allClients.length, 'clients');
+  
+  for (const client of allClients) {
+    client.postMessage({
+      type: 'NEW_VIDEO',
+      videoId: videoId,
+      title: title
+    });
+  }
+}
+
+// IndexedDB helpers for persisting known video IDs
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('VideoPlayerSW', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('config')) {
+        db.createObjectStore('config');
+      }
+    };
   });
 }
 
-// Periodic checking when SW is active (fallback for browsers without periodic sync)
+async function loadKnownVideoIds() {
+  try {
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['config'], 'readonly');
+      const store = transaction.objectStore('config');
+      const request = store.get('knownVideoIds');
+      
+      request.onerror = () => {
+        console.error('[SW] Error loading known IDs');
+        resolve();
+      };
+      
+      request.onsuccess = () => {
+        if (request.result) {
+          knownVideoIds = new Set(request.result);
+          console.log('[SW] Loaded', knownVideoIds.size, 'known video IDs');
+        }
+        resolve();
+      };
+    });
+  } catch (e) {
+    console.error('[SW] IndexedDB error:', e);
+    // Fallback: try localStorage via clients
+    try {
+      const allClients = await clients.matchAll({ type: 'window' });
+      if (allClients.length > 0) {
+        // Request known IDs from client
+        allClients[0].postMessage({ type: 'REQUEST_KNOWN_IDS' });
+      }
+    } catch (e2) {
+      console.error('[SW] Fallback also failed:', e2);
+    }
+  }
+}
+
+async function saveKnownVideoIds() {
+  try {
+    const db = await openDB();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['config'], 'readwrite');
+      const store = transaction.objectStore('config');
+      const request = store.put([...knownVideoIds], 'knownVideoIds');
+      
+      request.onerror = () => {
+        console.error('[SW] Error saving known IDs');
+        resolve();
+      };
+      
+      request.onsuccess = () => {
+        console.log('[SW] Saved', knownVideoIds.size, 'known video IDs');
+        resolve();
+      };
+    });
+  } catch (e) {
+    console.error('[SW] Error saving to IndexedDB:', e);
+  }
+}
+
+// ===== BACKGROUND INTERVAL CHECK =====
+// Note: This only runs while the service worker is active
+// For true background notifications, you'd need a server with Web Push
+
 let checkInterval = null;
 
-function startPeriodicCheck() {
-  if (checkInterval) clearInterval(checkInterval);
+function startBackgroundCheck() {
+  if (checkInterval) {
+    clearInterval(checkInterval);
+  }
   
+  // Check every minute while SW is active
   checkInterval = setInterval(() => {
     checkForNewVideos();
   }, CHECK_INTERVAL);
   
-  // Initial check
-  checkForNewVideos();
+  console.log('[SW] Background check started, interval:', CHECK_INTERVAL, 'ms');
 }
 
-console.log('[SW] Service Worker loaded');
+// Start checking when SW activates
+self.addEventListener('activate', () => {
+  startBackgroundCheck();
+});
+
+// Initial check when SW starts
+setTimeout(() => {
+  checkForNewVideos();
+}, 5000);
+
+console.log('[SW] Service Worker v' + SW_VERSION + ' loaded!');
