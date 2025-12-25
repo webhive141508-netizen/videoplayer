@@ -107,11 +107,6 @@
     .nav-btn.search-btn { background: rgba(59, 130, 246, 0.3); }
     .nav-btn.search-btn:active { background: rgba(59, 130, 246, 0.5); }
     
-    .nav-btn.notif-btn { background: rgba(251, 191, 36, 0.3); }
-    .nav-btn.notif-btn:active { background: rgba(251, 191, 36, 0.5); }
-    .nav-btn.notif-btn.enabled { background: rgba(34, 197, 94, 0.4); }
-    .nav-btn.notif-btn.enabled svg { fill: #22c55e; }
-    
     .info {
       flex: 1;
       text-align: center;
@@ -322,14 +317,12 @@
     }
     .pl-item:active { background: #222; }
     .pl-item.active { background: #1a365d; border-left: 3px solid #3b82f6; }
-    .pl-item.new { background: rgba(251, 191, 36, 0.15); border-left: 3px solid #fbbf24; }
     .pl-item .num {
       font-size: 12px;
       font-weight: 600;
       color: #3b82f6;
       min-width: 22px;
     }
-    .pl-item.new .num { color: #fbbf24; }
     .pl-item .name {
       flex: 1;
       font-size: 12px;
@@ -340,14 +333,6 @@
     .pl-item .name.loading {
       color: #666;
       font-style: italic;
-    }
-    .pl-item .new-badge {
-      background: #fbbf24;
-      color: #000;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 8px;
     }
     
     /* Search Modal */
@@ -642,49 +627,6 @@
     }
     .install-bar .i-close svg { width: 12px; height: 12px; }
     
-    /* Notification Permission Bar */
-    .notif-bar {
-      position: fixed;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      padding: 10px 16px;
-      border-radius: 30px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 499;
-      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
-      max-width: 95%;
-    }
-    .notif-bar.hide { display: none; }
-    .notif-bar svg { width: 18px; height: 18px; fill: #000; flex-shrink: 0; }
-    .notif-bar span { color: #000; font-size: 12px; font-weight: 500; }
-    .notif-bar .n-btn {
-      background: #000;
-      color: #fbbf24;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 15px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .notif-bar .n-close {
-      background: rgba(0,0,0,0.25);
-      border: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .notif-bar .n-close svg { width: 12px; height: 12px; fill: #000; }
-    
     .status {
       position: fixed;
       top: 8px;
@@ -858,29 +800,6 @@
     .history-item:hover .history-item-delete,
     .history-item:active .history-item-delete { opacity: 1; }
     .history-item-delete svg { width: 14px; height: 14px; fill: currentColor; }
-    
-    /* New video indicator animation */
-    @keyframes newPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0); }
-    }
-    .new-video-indicator {
-      position: fixed;
-      top: 60px;
-      right: 15px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: #000;
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      z-index: 600;
-      cursor: pointer;
-      animation: newPulse 2s infinite;
-      display: none;
-    }
-    .new-video-indicator.show { display: flex; align-items: center; gap: 6px; }
-    .new-video-indicator svg { width: 16px; height: 16px; fill: currentColor; }
   </style>
 </head>
 <body>
@@ -904,9 +823,6 @@
           <div class="video-title" id="vTitle">Loading...</div>
           <div class="video-count" id="vCount">-/-</div>
         </div>
-        <button class="nav-btn notif-btn" id="notifBtn" title="Notifications">
-          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-        </button>
         <button class="nav-btn search-btn" id="searchBtn" title="Search Videos">
           <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         </button>
@@ -1029,22 +945,6 @@
   <div class="toast" id="toast"></div>
   <div class="status" id="status"></div>
   
-  <!-- New Video Indicator -->
-  <div class="new-video-indicator" id="newVideoIndicator">
-    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    <span id="newVideoText">New video added!</span>
-  </div>
-  
-  <!-- Notification Permission Bar -->
-  <div class="notif-bar hide" id="notifBar">
-    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-    <span>Get notified when new videos are added</span>
-    <button class="n-btn" id="enableNotifBtn">Enable</button>
-    <button class="n-close" id="closeNotifBar">
-      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-    </button>
-  </div>
-  
   <div class="install-bar hide" id="installBar">
     <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
     <span>Install App</span>
@@ -1058,9 +958,10 @@
     // ===== CONFIGURATION =====
     const SHEET_ID = "18vr3vEXz378zaDwWZFcIDTZ1J5xzQ0vfZQ5KjjhhXVg";
     const AUTO_REFRESH_INTERVAL = 15000;
-    const NOTIFICATION_CHECK_INTERVAL = 30000; // Check for new videos every 30 seconds
     
     // ===== YOUTUBE API KEY =====
+    // IMPORTANT: Replace 'YOUR_API_KEY_HERE' with your actual YouTube Data API v3 key
+    // Get your API key from: https://console.cloud.google.com/apis/credentials
     const YOUTUBE_API_KEY = "AIzaSyCKw3OZQ-hKWgh7hXds4M53ToleyX6g9CE";
     
     // ===== STATE =====
@@ -1082,217 +983,8 @@
     let isSearching = false;
     let searchHistory = [];
     let watchHistory = [];
-    let knownVideoIds = new Set();
-    let newVideoIds = new Set();
-    let notificationsEnabled = false;
     
-    // ===== NOTIFICATION HELPERS =====
-    function checkNotificationSupport() {
-      return 'Notification' in window && 'serviceWorker' in navigator;
-    }
-    
-    function getNotificationPermission() {
-      if (!checkNotificationSupport()) return 'unsupported';
-      return Notification.permission;
-    }
-    
-    async function requestNotificationPermission() {
-      if (!checkNotificationSupport()) {
-        msg('Notifications not supported in this browser');
-        return false;
-      }
-      
-      try {
-        const permission = await Notification.requestPermission();
-        console.log('[NOTIF] Permission result:', permission);
-        
-        if (permission === 'granted') {
-          notificationsEnabled = true;
-          localStorage.setItem('vp_notif_enabled', 'true');
-          $('notifBtn').classList.add('enabled');
-          $('notifBar').classList.add('hide');
-          msg('Notifications enabled! 🔔');
-          
-          // Register for periodic background sync if supported
-          registerPeriodicSync();
-          
-          // Show a test notification
-          setTimeout(() => {
-            showNotification('Notifications Active', 'You will be notified when new videos are added!', null);
-          }, 1000);
-          
-          return true;
-        } else {
-          msg('Notification permission denied');
-          return false;
-        }
-      } catch (e) {
-        console.error('[NOTIF] Error requesting permission:', e);
-        msg('Failed to enable notifications');
-        return false;
-      }
-    }
-    
-    async function showNotification(title, body, videoId) {
-      if (!notificationsEnabled || getNotificationPermission() !== 'granted') {
-        console.log('[NOTIF] Notifications not enabled or permission not granted');
-        return;
-      }
-      
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        
-        const options = {
-          body: body,
-          icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          badge: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png',
-          vibrate: [200, 100, 200],
-          tag: videoId || 'general',
-          renotify: true,
-          requireInteraction: false,
-          data: {
-            videoId: videoId,
-            url: window.location.href
-          },
-          actions: videoId ? [
-            { action: 'play', title: '▶ Play Now' },
-            { action: 'dismiss', title: 'Dismiss' }
-          ] : []
-        };
-        
-        await registration.showNotification(title, options);
-        console.log('[NOTIF] Notification shown:', title);
-      } catch (e) {
-        console.error('[NOTIF] Error showing notification:', e);
-        // Fallback to regular Notification API
-        try {
-          new Notification(title, {
-            body: body,
-            icon: 'https://raw.githubusercontent.com/webhive141508-netizen/videoplayer/main/icon.png'
-          });
-        } catch (e2) {
-          console.error('[NOTIF] Fallback also failed:', e2);
-        }
-      }
-    }
-    
-    async function registerPeriodicSync() {
-      if (!('periodicSync' in navigator.serviceWorker)) {
-        console.log('[SYNC] Periodic Background Sync not supported');
-        return;
-      }
-      
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
-        
-        if (status.state === 'granted') {
-          await registration.periodicSync.register('check-new-videos', {
-            minInterval: 60 * 1000 // Minimum 1 minute (browser may adjust this)
-          });
-          console.log('[SYNC] Periodic sync registered');
-        } else {
-          console.log('[SYNC] Periodic sync permission not granted');
-        }
-      } catch (e) {
-        console.error('[SYNC] Failed to register periodic sync:', e);
-      }
-    }
-    
-    function loadNotificationSettings() {
-      const enabled = localStorage.getItem('vp_notif_enabled');
-      const knownIds = localStorage.getItem('vp_known_video_ids');
-      
-      notificationsEnabled = enabled === 'true' && getNotificationPermission() === 'granted';
-      
-      if (knownIds) {
-        try {
-          knownVideoIds = new Set(JSON.parse(knownIds));
-        } catch (e) {
-          knownVideoIds = new Set();
-        }
-      }
-      
-      updateNotifButtonState();
-    }
-    
-    function saveKnownVideoIds() {
-      localStorage.setItem('vp_known_video_ids', JSON.stringify([...knownVideoIds]));
-    }
-    
-    function updateNotifButtonState() {
-      const btn = $('notifBtn');
-      if (notificationsEnabled) {
-        btn.classList.add('enabled');
-      } else {
-        btn.classList.remove('enabled');
-      }
-    }
-    
-    function showNotificationPrompt() {
-      if (checkNotificationSupport() && getNotificationPermission() === 'default') {
-        const dismissed = localStorage.getItem('vp_notif_dismissed');
-        if (!dismissed) {
-          setTimeout(() => {
-            $('notifBar').classList.remove('hide');
-          }, 5000);
-        }
-      }
-    }
-    
-    // Check for new videos and notify
-    async function checkForNewVideosAndNotify() {
-      if (!notificationsEnabled) return;
-      
-      try {
-        const newVideos = await fetchSheetData();
-        
-        for (const video of newVideos) {
-          if (!knownVideoIds.has(video.id)) {
-            // This is a new video!
-            console.log('[NOTIF] New video detected:', video.title || video.id);
-            
-            // Add to known videos
-            knownVideoIds.add(video.id);
-            newVideoIds.add(video.id);
-            
-            // Get title if not available
-            let title = video.title;
-            if (!title || title === 'Loading...') {
-              title = await fetchYouTubeTitle(video.id) || 'New Video Added';
-            }
-            
-            // Show notification
-            showNotification('🎬 New Video Added!', title, video.id);
-            
-            // Show in-app indicator
-            showNewVideoIndicator(title);
-          }
-        }
-        
-        saveKnownVideoIds();
-        
-        // Update the playlist display if there are new videos
-        if (newVideoIds.size > 0) {
-          renderList();
-        }
-      } catch (e) {
-        console.error('[NOTIF] Error checking for new videos:', e);
-      }
-    }
-    
-    function showNewVideoIndicator(title) {
-      const indicator = $('newVideoIndicator');
-      $('newVideoText').textContent = title || 'New video added!';
-      indicator.classList.add('show');
-      
-      // Auto-hide after 10 seconds
-      setTimeout(() => {
-        indicator.classList.remove('show');
-      }, 10000);
-    }
-    
-    // ===== Load history from localStorage on startup =====
+    // Load history from localStorage on startup
     function loadHistoryFromStorage() {
       try {
         const savedSearchHistory = localStorage.getItem('vp_search_history');
@@ -1311,6 +1003,7 @@
       }
     }
     
+    // Save search history to localStorage
     function saveSearchHistory() {
       try {
         localStorage.setItem('vp_search_history', JSON.stringify(searchHistory.slice(0, 10)));
@@ -1319,6 +1012,7 @@
       }
     }
     
+    // Save watch history to localStorage
     function saveWatchHistory() {
       try {
         localStorage.setItem('vp_watch_history', JSON.stringify(watchHistory.slice(0, 50)));
@@ -1416,16 +1110,27 @@
     function extractChannelId(url) {
       if (!url) return null;
       url = url.trim();
+      
+      // Direct channel ID format: UC...
       let match = url.match(/^(UC[a-zA-Z0-9_-]{22})$/);
       if (match) return match[1];
+      
+      // youtube.com/channel/UC...
       match = url.match(/youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})/);
       if (match) return match[1];
+      
+      // youtube.com/@handle
       match = url.match(/youtube\.com\/@([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'handle', value: match[1] };
+      
+      // youtube.com/c/customname
       match = url.match(/youtube\.com\/c\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'custom', value: match[1] };
+      
+      // youtube.com/user/username
       match = url.match(/youtube\.com\/user\/([a-zA-Z0-9_-]+)/);
       if (match) return { type: 'user', value: match[1] };
+      
       return null;
     }
     
@@ -1522,6 +1227,7 @@
             const urlCell = row.c[1];
             const channelCell = row.c[2];
             
+            // Extract video from Column B
             let url = '';
             if (urlCell && urlCell.v) {
               url = String(urlCell.v).trim();
@@ -1539,6 +1245,7 @@
               newVideos.push({ id: videoId, title: title || '', url: url });
             }
             
+            // Extract channel from Column C
             if (channelCell && channelCell.v) {
               const channelUrl = String(channelCell.v).trim();
               if (channelUrl && !seenChannels.has(channelUrl)) {
@@ -1616,6 +1323,8 @@
       }
       
       const allResults = [];
+      
+      // Resolve all channels to IDs first
       const resolvedIds = [];
       for (const ch of channelIds) {
         const resolved = await resolveChannelToId(ch);
@@ -1624,6 +1333,7 @@
       
       console.log('[SEARCH] Searching in', resolvedIds.length, 'resolved channels');
       
+      // Search each channel
       for (const channelId of resolvedIds) {
         try {
           const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&q=${encodeURIComponent(query)}&type=video&maxResults=5&order=relevance&key=${YOUTUBE_API_KEY}`;
@@ -1656,6 +1366,7 @@
         }
       }
       
+      // Get video details (duration, views)
       if (allResults.length > 0) {
         try {
           const videoIds = allResults.map(r => r.id).join(',');
@@ -1678,6 +1389,7 @@
         }
       }
       
+      // Remove duplicates
       const unique = [];
       const seen = new Set();
       for (const r of allResults) {
@@ -1715,6 +1427,9 @@
         </div>
       `).join('');
     }
+    
+    // ===== HISTORY FUNCTIONS =====
+    // Note: loadHistoryFromStorage, saveSearchHistory, saveWatchHistory are defined above in STATE section
     
     function addToSearchHistory(query) {
       query = query.trim();
@@ -1812,6 +1527,7 @@
       `;
     }
     
+    // ===== HISTORY UI =====
     function openHistory() {
       historyModal.classList.add('open');
       renderWatchHistory();
@@ -1857,6 +1573,7 @@
       isSearching = false;
     }
     
+    // Search result click
     searchResults.onclick = e => {
       const item = e.target.closest('.search-result-item');
       if (item) {
@@ -1866,6 +1583,7 @@
         const duration = item.querySelector('.search-thumb .duration')?.textContent || '';
         const channel = item.querySelector('.search-result-channel')?.textContent || '';
         
+        // Add to watch history
         addToWatchHistory({
           id: videoId,
           title: videoTitle,
@@ -1887,6 +1605,7 @@
       }
     };
     
+    // Search history chip click
     searchHistoryChips.onclick = e => {
       const chip = e.target.closest('.search-chip');
       if (chip) {
@@ -1896,6 +1615,7 @@
       }
     };
     
+    // Clear search history
     $('clearSearchHistory').onclick = e => {
       e.stopPropagation();
       searchHistory = [];
@@ -1904,7 +1624,9 @@
       msg('Search history cleared');
     };
     
+    // History item click
     historyContent.onclick = e => {
+      // Check if delete button was clicked
       const deleteBtn = e.target.closest('.history-item-delete');
       if (deleteBtn) {
         e.stopPropagation();
@@ -1921,6 +1643,7 @@
         const videoId = item.dataset.id;
         const videoTitle = item.dataset.title;
         
+        // Move to top of history
         const index = parseInt(item.dataset.index);
         const video = watchHistory[index];
         watchHistory.splice(index, 1);
@@ -1941,6 +1664,7 @@
       }
     };
     
+    // Clear all watch history
     $('clearHistory').onclick = e => {
       e.stopPropagation();
       if (confirm('Clear all watch history?')) {
@@ -2016,14 +1740,6 @@
         const dataChanged = newHash !== lastDataHash;
         lastDataHash = newHash;
         
-        // Initialize known video IDs on first load
-        if (knownVideoIds.size === 0) {
-          for (const v of newVideos) {
-            knownVideoIds.add(v.id);
-          }
-          saveKnownVideoIds();
-        }
-        
         if (dataChanged || videos.length === 0) {
           const currentId = videos[idx]?.id;
           videos = newVideos;
@@ -2070,16 +1786,9 @@
     function renderList() {
       drawerList.innerHTML = videos.map((v, i) => {
         const isLoading = v.title === 'Loading...' || !v.title;
-        const isNew = newVideoIds.has(v.id);
-        const isActive = i === idx;
-        let classes = 'pl-item';
-        if (isActive) classes += ' active';
-        if (isNew && !isActive) classes += ' new';
-        
-        return `<div class="${classes}" data-i="${i}">
+        return `<div class="pl-item${i === idx ? ' active' : ''}" data-i="${i}">
           <span class="num">${i + 1}</span>
           <span class="name${isLoading ? ' loading' : ''}">${v.title || 'Loading...'}</span>
-          ${isNew ? '<span class="new-badge">NEW</span>' : ''}
         </div>`;
       }).join('');
     }
@@ -2131,12 +1840,6 @@
         loader.classList.add('hide');
         setPlayState(true);
         startUpd();
-        // Mark video as seen (remove from new)
-        const currentVideo = videos[idx];
-        if (currentVideo && newVideoIds.has(currentVideo.id)) {
-          newVideoIds.delete(currentVideo.id);
-          renderList();
-        }
       } else if (s === YT.PlayerState.PAUSED) {
         setPlayState(false);
         stopUpd();
@@ -2250,13 +1953,7 @@
     }
     
     async function autoRefresh() {
-      try { 
-        await loadData(false); 
-        // Also check for new videos for notifications
-        if (notificationsEnabled) {
-          await checkForNewVideosAndNotify();
-        }
-      } catch (e) {}
+      try { await loadData(false); } catch (e) {}
     }
     
     // ===== PROGRESS BAR =====
@@ -2335,43 +2032,6 @@
     $('historyClose').onclick = e => { e.stopPropagation(); closeHistory(); };
     drawerBg.onclick = closeDrawer;
     
-    // Notification button
-    $('notifBtn').onclick = async e => {
-      e.stopPropagation();
-      if (notificationsEnabled) {
-        // Show status
-        msg('Notifications are enabled! 🔔');
-      } else {
-        await requestNotificationPermission();
-      }
-    };
-    
-    // Notification bar buttons
-    $('enableNotifBtn').onclick = async e => {
-      e.stopPropagation();
-      await requestNotificationPermission();
-    };
-    
-    $('closeNotifBar').onclick = e => {
-      e.stopPropagation();
-      $('notifBar').classList.add('hide');
-      localStorage.setItem('vp_notif_dismissed', 'true');
-    };
-    
-    // New video indicator click
-    $('newVideoIndicator').onclick = () => {
-      $('newVideoIndicator').classList.remove('show');
-      // Find and play the newest video
-      if (newVideoIds.size > 0) {
-        const newId = [...newVideoIds][0];
-        const newIdx = videos.findIndex(v => v.id === newId);
-        if (newIdx >= 0) {
-          idx = newIdx;
-          loadVid();
-        }
-      }
-    };
-    
     searchInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); performSearch(); }
     });
@@ -2443,19 +2103,6 @@
     
     window.addEventListener('online', () => { msg('Back online!'); autoRefresh(); });
     
-    // Listen for messages from service worker
-    navigator.serviceWorker?.addEventListener('message', event => {
-      if (event.data.type === 'NEW_VIDEO') {
-        const { videoId, title } = event.data;
-        console.log('[SW] New video message received:', title);
-        showNewVideoIndicator(title);
-        newVideoIds.add(videoId);
-        knownVideoIds.add(videoId);
-        saveKnownVideoIds();
-        loadData(false);
-      }
-    });
-    
     // ===== PWA =====
     let deferredPrompt = null;
     const installBar = $('installBar');
@@ -2489,19 +2136,7 @@
         for (let registration of registrations) registration.unregister();
       });
       setTimeout(() => {
-        navigator.serviceWorker.register('sw.js?v=' + Date.now())
-          .then(registration => {
-            console.log('[SW] Registered:', registration.scope);
-            
-            // Send config to service worker
-            if (registration.active) {
-              registration.active.postMessage({
-                type: 'CONFIG',
-                sheetId: SHEET_ID
-              });
-            }
-          })
-          .catch(err => console.error('[SW] Registration failed:', err));
+        navigator.serviceWorker.register('sw.js?v=' + Date.now()).catch(() => {});
       }, 1000);
     }
     
@@ -2513,9 +2148,10 @@
     async function init() {
       console.log('[INIT] Starting Video Player...');
       
+      // Load history from localStorage first
       loadHistoryFromStorage();
-      loadNotificationSettings();
       
+      // Check API key
       if (YOUTUBE_API_KEY === "YOUR_API_KEY_HERE") {
         console.warn('[INIT] YouTube API key not configured! Search will not work.');
       }
@@ -2527,16 +2163,7 @@
         loadAPI();
       }
       
-      // Start periodic checks
       setInterval(autoRefresh, AUTO_REFRESH_INTERVAL);
-      
-      // Check for notifications every 30 seconds
-      if (notificationsEnabled) {
-        setInterval(checkForNewVideosAndNotify, NOTIFICATION_CHECK_INTERVAL);
-      }
-      
-      // Show notification prompt after a delay
-      showNotificationPrompt();
     }
     
     init();
