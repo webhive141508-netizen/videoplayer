@@ -498,7 +498,7 @@
       border-bottom: 1px solid #222;
       background: #0a0a0a;
     }
-        
+    
     .search-results {
       flex: 1;
       overflow-y: auto;
@@ -700,7 +700,6 @@
       transition: opacity 0.2s;
     }
     .history-modal.open { opacity: 1; pointer-events: auto; }
-    
     .history-header {
       padding: 12px 15px;
       border-bottom: 1px solid #333;
@@ -998,7 +997,7 @@
     .live-now-playing {
       background: #1f1f1f;
       border-radius: 8px;
-padding: 12px;
+      padding: 12px;
       margin-bottom: 15px;
       display: none;
     }
@@ -1024,6 +1023,57 @@ padding: 12px;
       background: #ef4444;
       border-radius: 50%;
       animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    /* Live Quality Badge */
+    .live-quality {
+      position: fixed;
+      bottom: 70px;
+      right: 15px;
+      background: rgba(0,0,0,0.8);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #22c55e;
+      font-weight: 600;
+      z-index: 55;
+      display: none;
+    }
+    .live-quality.show { display: block; }
+    .live-quality.buffering { color: #f59e0b; }
+    .live-quality.error { color: #ef4444; }
+    
+    /* Live controls bar */
+    .bottom.live-mode .ctrls {
+      margin-top: 8px;
+    }
+    
+    .live-status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .bottom.live-mode .live-status-bar { display: flex; }
+    
+    .live-status-dot {
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .live-status-text {
+      font-size: 12px;
+      color: #ef4444;
+      font-weight: 600;
+      flex: 1;
+    }
+    
+    .live-quality-text {
+      font-size: 11px;
+      color: #888;
     }
   </style>
 </head>
@@ -1084,6 +1134,11 @@ padding: 12px;
             <div class="prog-thumb" id="progThumb"></div>
           </div>
           <span class="time right" id="durT">0:00</span>
+        </div>
+        <div class="live-status-bar">
+          <span class="live-status-dot"></span>
+          <span class="live-status-text">LIVE</span>
+          <span class="live-quality-text" id="liveQuality"></span>
         </div>
         <div class="ctrls">
           <div class="ctrl-grp">
@@ -1316,6 +1371,7 @@ padding: 12px;
     const liveModal = $('liveModal');
     const liveContent = $('liveContent');
     const bottomBar = $('bottomBar');
+    
     hlsPlayer = $('hlsPlayer');
     
     function fmt(s) {
@@ -1369,7 +1425,6 @@ padding: 12px;
       if (match) return match[1];
       return null;
     }
-    
     function extractChannelId(url) {
       if (!url) return null;
       url = url.trim();
@@ -1701,6 +1756,7 @@ padding: 12px;
         </div>
       `).join('');
     }
+    
     function addToSearchHistory(query) {
       query = query.trim();
       if (!query) return;
@@ -1848,40 +1904,130 @@ padding: 12px;
       $('player').style.display = 'none';
       hlsPlayer.classList.add('active');
       
-      // Show loader
-      loaderText.textContent = 'Connecting to live stream...';
+      // Show loader with connection stages
+      loaderText.textContent = 'Connecting...';
       loader.classList.remove('hide');
       
-      // Initialize HLS
+      // Update loader text progressively
+      setTimeout(() => {
+        if (loader.classList.contains('hide')) return;
+        loaderText.textContent = 'Loading stream data...';
+      }, 1000);
+      
+      setTimeout(() => {
+        if (loader.classList.contains('hide')) return;
+        loaderText.textContent = 'Buffering...';
+      }, 3000);
+      
+      // Initialize HLS with optimized settings for fast startup and smooth playback
       if (Hls.isSupported()) {
         hls = new Hls({
+          // Performance & Speed
           enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 90
+          lowLatencyMode: false, // Disable for stability
+          
+          // Buffer settings - smaller for faster start
+          maxBufferLength: 10,           // Max buffer in seconds (faster start)
+          maxMaxBufferLength: 30,        // Max buffer cap
+          maxBufferSize: 60 * 1000 * 1000, // 60MB max buffer
+          maxBufferHole: 0.5,            // Max gap to skip
+          
+          // Live sync settings
+          liveSyncDurationCount: 3,      // Segments behind live edge
+          liveMaxLatencyDurationCount: 10, // Max latency before sync
+          liveDurationInfinity: true,    // Infinite duration for live
+          liveBackBufferLength: 30,      // Back buffer for live
+          
+          // Faster fragment loading
+          fragLoadingTimeOut: 20000,     // 20s timeout
+          fragLoadingMaxRetry: 6,        // More retries
+          fragLoadingRetryDelay: 500,    // Fast retry
+          fragLoadingMaxRetryTimeout: 64000,
+          
+          // Faster manifest loading
+          manifestLoadingTimeOut: 10000,
+          manifestLoadingMaxRetry: 4,
+          manifestLoadingRetryDelay: 500,
+          manifestLoadingMaxRetryTimeout: 64000,
+          
+          // Level loading
+          levelLoadingTimeOut: 10000,
+          levelLoadingMaxRetry: 4,
+          levelLoadingRetryDelay: 500,
+          levelLoadingMaxRetryTimeout: 64000,
+          
+          // Start settings
+          startLevel: -1,                // Auto select best quality
+          startFragPrefetch: true,       // Prefetch first fragment
+          testBandwidth: true,
+          
+          // ABR settings for smooth quality switching
+          abrEwmaDefaultEstimate: 500000,  // Initial bandwidth estimate
+          abrBandWidthFactor: 0.95,
+          abrBandWidthUpFactor: 0.7,
+          abrMaxWithRealBitrate: true,
+          
+          // Stall recovery
+          highBufferWatchdogPeriod: 2,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 5,
+          
+          // XHR settings
+          xhrSetup: function(xhr, url) {
+            xhr.withCredentials = false;
+          }
         });
         
         hls.loadSource(channel.url);
         hls.attachMedia(hlsPlayer);
         
-        hls.on(Hls.Events.MANIFEST_PARSED, function() {
-          console.log('[HLS] Manifest loaded');
-          loader.classList.add('hide');
-          hlsPlayer.play().catch(e => {
-            console.log('[HLS] Autoplay blocked:', e);
-            setPlayState(false);
-          });
+        // Track loading progress
+        let manifestLoaded = false;
+        let firstFragLoaded = false;
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+          console.log('[HLS] Manifest loaded, levels:', data.levels.length);
+          manifestLoaded = true;
+          loaderText.textContent = 'Buffering stream...';
+        });
+        
+        hls.on(Hls.Events.FRAG_LOADED, function(event, data) {
+          if (!firstFragLoaded) {
+            firstFragLoaded = true;
+            console.log('[HLS] First fragment loaded');
+          }
+        });
+        
+        hls.on(Hls.Events.FRAG_BUFFERED, function(event, data) {
+          // Start playback as soon as we have buffered data
+          if (hlsPlayer.paused && hlsPlayer.readyState >= 3) {
+            loader.classList.add('hide');
+            hlsPlayer.play().catch(e => {
+              console.log('[HLS] Autoplay blocked:', e);
+              setPlayState(false);
+              loader.classList.add('hide');
+            });
+          }
         });
         
         hls.on(Hls.Events.ERROR, function(event, data) {
-          console.error('[HLS] Error:', data);
+          console.error('[HLS] Error:', data.type, data.details);
+          
           if (data.fatal) {
             switch(data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                msg('Network error - retrying...');
-                hls.startLoad();
+                console.log('[HLS] Network error, attempting recovery...');
+                loaderText.textContent = 'Connection lost, retrying...';
+                loader.classList.remove('hide');
+                // Try to recover
+                setTimeout(() => {
+                  if (hls) {
+                    hls.startLoad();
+                  }
+                }, 1000);
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                msg('Media error - recovering...');
+                console.log('[HLS] Media error, attempting recovery...');
                 hls.recoverMediaError();
                 break;
               default:
@@ -1889,8 +2035,28 @@ padding: 12px;
                 stopLiveChannel();
                 break;
             }
+          } else {
+            // Non-fatal errors - just log
+            if (data.details === 'bufferStalledError') {
+              loaderText.textContent = 'Buffering...';
+              loader.classList.remove('hide');
+            }
           }
         });
+        
+        // Level switching for quality info
+        hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+          const level = hls.levels[data.level];
+          if (level) {
+            const quality = level.height ? level.height + 'p' : Math.round(level.bitrate/1000) + 'kbps';
+            console.log('[HLS] Quality:', quality);
+            const qualityEl = $('liveQuality');
+            if (qualityEl) {
+              qualityEl.textContent = quality;
+            }
+          }
+        });
+        
       } else if (hlsPlayer.canPlayType('application/vnd.apple.mpegurl')) {
         // For Safari native HLS support
         hlsPlayer.src = channel.url;
@@ -1910,13 +2076,17 @@ padding: 12px;
     }
     
     function stopLiveChannel() {
+      // Stop stall detection
+      stopStallDetection();
+      
       if (hls) {
         hls.destroy();
         hls = null;
       }
       
       hlsPlayer.pause();
-      hlsPlayer.src = '';
+      hlsPlayer.removeAttribute('src');
+      hlsPlayer.load(); // Reset the player
       hlsPlayer.classList.remove('active');
       
       isLiveMode = false;
@@ -1933,17 +2103,102 @@ padding: 12px;
       }
     }
     
-    // HLS player events
-    hlsPlayer.onplay = () => setPlayState(true);
-    hlsPlayer.onpause = () => setPlayState(false);
+    // HLS player events with stall recovery
+    let stallCheckInterval = null;
+    let lastPlaybackTime = 0;
+    let stallCount = 0;
+    
+    function startStallDetection() {
+      stopStallDetection();
+      lastPlaybackTime = hlsPlayer.currentTime;
+      stallCount = 0;
+      
+      stallCheckInterval = setInterval(() => {
+        if (!isLiveMode || hlsPlayer.paused) return;
+        
+        const currentTime = hlsPlayer.currentTime;
+        
+        // If time hasn't progressed and we're supposed to be playing
+        if (currentTime === lastPlaybackTime && !hlsPlayer.paused && !hlsPlayer.ended) {
+          stallCount++;
+          console.log('[HLS] Stall detected, count:', stallCount);
+          
+          if (stallCount >= 3) {
+            // Try recovery
+            console.log('[HLS] Attempting stall recovery...');
+            loaderText.textContent = 'Recovering stream...';
+            loader.classList.remove('hide');
+            
+            if (hls) {
+              // Try seeking slightly forward
+              hlsPlayer.currentTime = currentTime + 0.1;
+              
+              if (stallCount >= 6) {
+                // More aggressive recovery
+                hls.recoverMediaError();
+                stallCount = 0;
+              }
+            }
+          }
+        } else {
+          stallCount = 0;
+        }
+        
+        lastPlaybackTime = currentTime;
+      }, 1000);
+    }
+    
+    function stopStallDetection() {
+      if (stallCheckInterval) {
+        clearInterval(stallCheckInterval);
+        stallCheckInterval = null;
+      }
+    }
+    
+    hlsPlayer.onplay = () => {
+      setPlayState(true);
+      startStallDetection();
+    };
+    
+    hlsPlayer.onpause = () => {
+      setPlayState(false);
+      stopStallDetection();
+    };
+    
     hlsPlayer.onwaiting = () => {
       loaderText.textContent = 'Buffering...';
       loader.classList.remove('hide');
     };
-    hlsPlayer.onplaying = () => loader.classList.add('hide');
+    
+    hlsPlayer.onplaying = () => {
+      loader.classList.add('hide');
+      stallCount = 0;
+    };
+    
+    hlsPlayer.oncanplay = () => {
+      console.log('[HLS] Can play');
+    };
+    
+    hlsPlayer.oncanplaythrough = () => {
+      console.log('[HLS] Can play through');
+      loader.classList.add('hide');
+    };
+    
+    hlsPlayer.onstalled = () => {
+      console.log('[HLS] Playback stalled');
+      loaderText.textContent = 'Stream stalled...';
+      loader.classList.remove('hide');
+    };
+    
     hlsPlayer.onerror = (e) => {
       console.error('[HLS] Player error:', e);
-      msg('Playback error');
+      // Try recovery before showing error
+      if (hls && isLiveMode) {
+        console.log('[HLS] Attempting error recovery...');
+        hls.recoverMediaError();
+      } else {
+        msg('Playback error');
+      }
     };
     
     // ===== SEARCH UI =====
@@ -2020,6 +2275,7 @@ padding: 12px;
           </div>
         `;
       }
+      
       isSearching = false;
     }
     
@@ -2203,8 +2459,7 @@ padding: 12px;
         if (!newVideos.length && liveChannels.length === 0) {
           showErr('No videos or live channels found in sheet');
           return false;
-        }
-        
+  }
         const newHash = hashCode(JSON.stringify(newVideos.map(v => v.id)));
         const dataChanged = newHash !== lastDataHash;
         lastDataHash = newHash;
@@ -2411,7 +2666,7 @@ padding: 12px;
       if (!player || !ready || !dur) return;
       player.seekTo(dur * pct, true);
     }
-       
+    
     function cycleSpd() {
       if (isLiveMode) {
         msg('Speed control not available for live streams');
