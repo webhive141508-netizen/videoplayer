@@ -1587,7 +1587,7 @@
         try { vocalAudio.playbackRate = player.getPlaybackRate() || 1; } catch(e) {}
         try {
           const yt = player.getCurrentTime() || 0;
-          if (Math.abs(vocalAudio.currentTime - yt) > 0.15) vocalAudio.currentTime = yt;
+          if (!vocalAudio.seeking && Math.abs(vocalAudio.currentTime - yt) > 0.5) vocalAudio.currentTime = yt;
         } catch(e) {}
         const pr = vocalAudio.play();
         if (pr && pr.catch) pr.catch(() => { vocalPending = true; msg('Tap the screen to start vocal-only audio'); });
@@ -1618,9 +1618,14 @@
       try {
         if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
         const t = player.getCurrentTime();
-        if (Math.abs(vocalAudio.currentTime - t) > 0.3) vocalAudio.currentTime = t;
         const r = player.getPlaybackRate();
         if (vocalAudio.playbackRate !== r) vocalAudio.playbackRate = r;
+        // Audio still loading or seeking: do NOT touch its position, just let it start when data arrives
+        if (vocalAudio.seeking || vocalAudio.readyState < 3) {
+          if (vocalAudio.paused) { const p0 = vocalAudio.play(); if (p0 && p0.catch) p0.catch(() => {}); }
+          return;
+        }
+        if (Math.abs(vocalAudio.currentTime - t) > 0.3) vocalAudio.currentTime = t;
         if (vocalAudio.paused || vocalAudio.ended) {
           const pr = vocalAudio.play();
           if (pr && pr.catch) pr.catch(() => {});
@@ -1628,13 +1633,13 @@
       } catch(e) {}
     }
     setInterval(vocalResync, 250);
-    ['canplay', 'seeked', 'playing', 'stalled', 'waiting'].forEach(ev => vocalAudio.addEventListener(ev, vocalResync));
+    ['canplay', 'seeked', 'playing'].forEach(ev => vocalAudio.addEventListener(ev, vocalResync));
     vocalAudio.addEventListener('error', () => {
       if (!vocalActive) return;
       // Vocal file failed to load: fall back to the normal YouTube audio
       vocalStop();
       restoreYTSound();
-      msg('Vocal file failed to load - playing normal audio');
+      msg('Vocal file failed to load (' + (vocalAudio.error ? vocalAudio.error.code : '?') + ') - playing normal audio');
     });
     // Retry blocked autoplay on the next tap
     document.addEventListener('pointerdown', () => {
