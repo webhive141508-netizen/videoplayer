@@ -1531,30 +1531,60 @@
     try { vocalOn = localStorage.getItem('vp_vocal2') !== '0'; } catch(e) {}
     let vocalActive = false;
     let vocalPending = false;
+    let vocalWaiting = false;
+    const vocalBlobs = {};    // url -> local object URL (fully downloaded file)
+    const vocalLoading = {};  // url -> download promise
+    const vocalFailed = {};   // url -> true if download failed
+    const vocalOrder = [];    // download order, for cleanup
 
     function curVideoId() {
       try { return player.getVideoData().video_id; } catch(e) { return null; }
     }
-    function hasVocal(id) { return !!(id && vocalMap[id]); }
+    function hasVocal(id) { return !!(id && vocalMap[id] && !vocalFailed[vocalMap[id]]); }
     function updVocBtn() {
       if (!vocBtn) return;
       const id = isLiveMode ? null : (curVideoId() || (videos[idx] && videos[idx].id));
       vocBtn.classList.toggle('on', vocalOn);
       vocBtn.classList.toggle('novocal', !hasVocal(id));
     }
-    // Mute YouTube before a video that has a vocal track starts, so music never leaks
+    // Download the whole vocal file once (fast, then seeking and sync are instant)
+    function vocalLoad(id) {
+      const url = vocalMap[id];
+      if (!url) return Promise.reject(new Error('no vocal url'));
+      if (vocalBlobs[url]) return Promise.resolve(vocalBlobs[url]);
+      if (vocalLoading[url]) return vocalLoading[url];
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 30000);
+      const pr = fetch(url, { signal: ctrl.signal })
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+        .then(blob => {
+          clearTimeout(timer);
+          const o = URL.createObjectURL(blob);
+          vocalBlobs[url] = o;
+          vocalOrder.push(url);
+          while (vocalOrder.length > 4) {
+            const k = vocalOrder.findIndex(u => vocalBlobs[u] !== vocalAudio.getAttribute('data-src'));
+            if (k < 0) break;
+            const old = vocalOrder.splice(k, 1)[0];
+            try { URL.revokeObjectURL(vocalBlobs[old]); } catch(e) {}
+            delete vocalBlobs[old];
+          }
+          return o;
+        });
+      vocalLoading[url] = pr;
+      pr.then(() => { delete vocalLoading[url]; },
+              () => { clearTimeout(timer); vocalFailed[url] = true; delete vocalLoading[url]; });
+      return pr;
+    }
+    // Mute YouTube before a video that has a vocal track starts, and start downloading it
     function preVocal(videoId) {
       if (!player || !ready) return;
+      vocalWaiting = false;
       if (vocalOn && hasVocal(videoId)) {
         try { player.mute(); } catch(e) {}
-        const url = vocalMap[videoId];
-        if (vocalAudio.getAttribute('data-src') !== url) {
-          vocalAudio.setAttribute('data-src', url);
-          vocalAudio.src = url;
-        }
-        try { vocalAudio.pause(); } catch(e) {}
-        vocalAudio.muted = muted;
         vocalActive = true;
+        try { vocalAudio.pause(); } catch(e) {}
+        vocalLoad(videoId).catch(() => {});
       } else if (vocalActive) {
         // No vocal track for this video: switch to normal audio right away
         vocalStop();
@@ -1565,10 +1595,38 @@
       try { vocalAudio.pause(); } catch(e) {}
       vocalActive = false;
       vocalPending = false;
+      vocalWaiting = false;
     }
     function restoreYTSound() {
       if (!player || !ready) return;
       try { if (muted) player.mute(); else player.unMute(); } catch(e) {}
+    }
+    // Start the downloaded vocal track in sync with the video
+    function vocalStart(id) {
+      const o = vocalBlobs[vocalMap[id]];
+      if (!o) return;
+      vocalWaiting = false;
+      vocalActive = true;
+      try { player.mute(); } catch(e) {}
+      if (vocalAudio.getAttribute('data-src') !== o) {
+        vocalAudio.setAttribute('data-src', o);
+        vocalAudio.src = o;
+      }
+      vocalAudio.muted = muted;
+      try { vocalAudio.playbackRate = player.getPlaybackRate() || 1; } catch(e) {}
+      try {
+        const yt = player.getCurrentTime() || 0;
+        if (Math.abs(vocalAudio.currentTime - yt) > 0.2) vocalAudio.currentTime = yt;
+      } catch(e) {}
+      const pr = vocalAudio.play();
+      if (pr && pr.catch) pr.catch(() => { vocalPending = true; msg('Tap the screen to start vocal-only audio'); });
+      // Download the next video's vocals in the background so it starts instantly
+      try {
+        if (videos.length > 1) {
+          const nx = videos[(idx + 1) % videos.length];
+          if (nx && hasVocal(nx.id)) vocalLoad(nx.id).catch(() => {});
+        }
+      } catch(e) {}
     }
     // Called when YouTube is PLAYING: decide whether to use the vocal track
     function syncVocalSource() {
@@ -1576,29 +1634,37 @@
       const id = curVideoId();
       updVocBtn();
       if (vocalOn && hasVocal(id)) {
-        const url = vocalMap[id];
-        if (vocalAudio.getAttribute('data-src') !== url) {
-          vocalAudio.setAttribute('data-src', url);
-          vocalAudio.src = url;
-        }
         vocalActive = true;
         try { player.mute(); } catch(e) {}
-        vocalAudio.muted = muted;
-        try { vocalAudio.playbackRate = player.getPlaybackRate() || 1; } catch(e) {}
-        try {
-          const yt = player.getCurrentTime() || 0;
-          if (!vocalAudio.seeking && Math.abs(vocalAudio.currentTime - yt) > 0.5) vocalAudio.currentTime = yt;
-        } catch(e) {}
-        const pr = vocalAudio.play();
-        if (pr && pr.catch) pr.catch(() => { vocalPending = true; msg('Tap the screen to start vocal-only audio'); });
-      } else {
-        if (vocalActive) { vocalStop(); restoreYTSound(); }
+        if (vocalBlobs[vocalMap[id]]) { vocalStart(id); return; }
+        // Vocal file still downloading: hold the video so audio and video start together
+        vocalWaiting = true;
+        try { player.pauseVideo(); } catch(e) {}
+        loaderText.textContent = 'Loading vocals...';
+        loader.classList.remove('hide');
+        vocalLoad(id).then(() => {
+          if (vocalWaiting && !isLiveMode && curVideoId() === id) {
+            loader.classList.add('hide');
+            try { player.playVideo(); } catch(e) {}
+          }
+        }).catch(() => {
+          if (isLiveMode || curVideoId() !== id) return;
+          vocalStop();
+          restoreYTSound();
+          loader.classList.add('hide');
+          msg('Vocal file failed to load - playing normal audio');
+          try { player.playVideo(); } catch(e) {}
+          updVocBtn();
+        });
+      } else if (vocalActive) {
+        vocalStop(); restoreYTSound();
       }
     }
     function toggleVocal() {
       vocalOn = !vocalOn;
       try { localStorage.setItem('vp_vocal2', vocalOn ? '1' : '0'); } catch(e) {}
       if (isLiveMode) { msg('Vocal only: ' + (vocalOn ? 'On' : 'Off') + ' (YouTube videos)'); updVocBtn(); return; }
+      for (const k in vocalFailed) delete vocalFailed[k];
       const id = curVideoId() || (videos[idx] && videos[idx].id);
       if (vocalOn && !hasVocal(id)) {
         msg('No vocal track for this video');
@@ -1608,24 +1674,26 @@
       if (vocalOn) {
         if (hasVocal(id)) { preVocal(id); if (playing) syncVocalSource(); }
       } else if (vocalActive) {
+        const wasWaiting = vocalWaiting;
         vocalStop(); restoreYTSound();
+        if (wasWaiting) { loader.classList.add('hide'); try { player.playVideo(); } catch(e) {} }
       }
       updVocBtn();
     }
     // Keep vocal audio locked to the video
     function vocalResync() {
-      if (!vocalActive || isLiveMode || !player || !ready || isSeeking) return;
+      if (!vocalActive || vocalWaiting || isLiveMode || !player || !ready || isSeeking) return;
       try {
         if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
         const t = player.getCurrentTime();
         const r = player.getPlaybackRate();
         if (vocalAudio.playbackRate !== r) vocalAudio.playbackRate = r;
-        // Audio still loading or seeking: do NOT touch its position, just let it start when data arrives
+        // Audio still decoding or seeking: do not touch its position, just let it start
         if (vocalAudio.seeking || vocalAudio.readyState < 3) {
           if (vocalAudio.paused) { const p0 = vocalAudio.play(); if (p0 && p0.catch) p0.catch(() => {}); }
           return;
         }
-        if (Math.abs(vocalAudio.currentTime - t) > 0.3) vocalAudio.currentTime = t;
+        if (Math.abs(vocalAudio.currentTime - t) > 0.25) vocalAudio.currentTime = t;
         if (vocalAudio.paused || vocalAudio.ended) {
           const pr = vocalAudio.play();
           if (pr && pr.catch) pr.catch(() => {});
@@ -1635,11 +1703,11 @@
     setInterval(vocalResync, 250);
     ['canplay', 'seeked', 'playing'].forEach(ev => vocalAudio.addEventListener(ev, vocalResync));
     vocalAudio.addEventListener('error', () => {
-      if (!vocalActive) return;
-      // Vocal file failed to load: fall back to the normal YouTube audio
+      if (!vocalActive || !vocalAudio.getAttribute('data-src')) return;
+      // Vocal file could not be played: fall back to the normal YouTube audio
       vocalStop();
       restoreYTSound();
-      msg('Vocal file failed to load (' + (vocalAudio.error ? vocalAudio.error.code : '?') + ') - playing normal audio');
+      msg('Vocal file could not be played (' + (vocalAudio.error ? vocalAudio.error.code : '?') + ') - playing normal audio');
     });
     // Retry blocked autoplay on the next tap
     document.addEventListener('pointerdown', () => {
@@ -1733,6 +1801,7 @@
       liveChannels = newLiveChannels;
       vocalMap = newVocals;
       updVocBtn();
+      try { if (vocalOn && videos[idx] && hasVocal(videos[idx].id)) vocalLoad(videos[idx].id).catch(() => {}); } catch(e) {}
       $('channelCount').textContent = channelIds.length;
       
       console.log('[FETCH] Found', newVideos.length, 'videos,', channelIds.length, 'channels, and', liveChannels.length, 'live channels');
