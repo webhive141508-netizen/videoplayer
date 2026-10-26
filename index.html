@@ -1535,6 +1535,7 @@
     const vocalBlobs = {};    // url -> local object URL (fully downloaded file)
     const vocalLoading = {};  // url -> download promise
     const vocalFailed = {};   // url -> true if download failed
+    const vocalDirectTried = {}; // url -> true once we had to stream the original link instead of the downloaded copy
     const vocalOrder = [];    // download order, for cleanup
 
     function curVideoId() {
@@ -1617,7 +1618,8 @@
     }
     // Start the downloaded vocal track in sync with the video
     function vocalStart(id) {
-      const o = vocalBlobs[vocalMap[id]];
+      const u0 = vocalMap[id];
+      const o = vocalDirectTried[u0] ? u0 : vocalBlobs[u0];
       if (!o) return;
       vocalWaiting = false;
       vocalActive = true;
@@ -1633,7 +1635,7 @@
         if (Math.abs(vocalAudio.currentTime - yt) > 0.2) vocalAudio.currentTime = yt;
       } catch(e) {}
       const pr = vocalAudio.play();
-      if (pr && pr.catch) pr.catch(() => { vocalPending = true; msg('Tap the screen to start vocal-only audio'); });
+      if (pr && pr.catch) pr.catch(err => { if (err && err.name === 'NotAllowedError') { vocalPending = true; msg('Tap the screen to start vocal-only audio'); } });
       // Download the next video's vocals in the background so it starts instantly
       try {
         if (videos.length > 1) {
@@ -1717,11 +1719,24 @@
     setInterval(vocalResync, 250);
     ['canplay', 'seeked', 'playing'].forEach(ev => vocalAudio.addEventListener(ev, vocalResync));
     vocalAudio.addEventListener('error', () => {
-      if (!vocalActive || !vocalAudio.getAttribute('data-src')) return;
-      // Vocal file could not be played: fall back to the normal YouTube audio
+      const cur = vocalAudio.getAttribute('data-src');
+      if (!vocalActive || !cur) return;
+      const code = vocalAudio.error ? vocalAudio.error.code : '?';
+      // First failure on the downloaded copy: retry by streaming the original link directly
+      const origUrl = Object.keys(vocalBlobs).find(u => vocalBlobs[u] === cur);
+      if (origUrl && !vocalDirectTried[origUrl]) {
+        vocalDirectTried[origUrl] = true;
+        vocalAudio.setAttribute('data-src', origUrl);
+        vocalAudio.src = origUrl;
+        try { vocalAudio.currentTime = player.getCurrentTime() || 0; } catch(e) {}
+        const pr = vocalAudio.play();
+        if (pr && pr.catch) pr.catch(() => {});
+        return;
+      }
+      // Could not be played at all: fall back to the normal YouTube audio
       vocalStop();
       restoreYTSound();
-      msg('Vocal file could not be played (' + (vocalAudio.error ? vocalAudio.error.code : '?') + ') - playing normal audio');
+      msg('Vocal file could not be played (' + code + ') - playing normal audio');
     });
     // Retry blocked autoplay on the next tap
     document.addEventListener('pointerdown', () => {
