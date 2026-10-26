@@ -1547,6 +1547,20 @@
       vocBtn.classList.toggle('on', vocalOn);
       vocBtn.classList.toggle('novocal', !hasVocal(id));
     }
+    // Work out the audio type from the file's first bytes (falls back to the file extension)
+    function vocalMime(buf, url) {
+      const b = new Uint8Array(buf.slice(0, 12));
+      const str = (i, n) => String.fromCharCode.apply(null, Array.from(b.slice(i, i + n)));
+      if (str(0, 3) === 'ID3' || (b[0] === 0xFF && (b[1] & 0xE0) === 0xE0)) return 'audio/mpeg';
+      if (str(0, 4) === 'RIFF') return 'audio/wav';
+      if (str(0, 4) === 'OggS') return 'audio/ogg';
+      if (str(0, 4) === 'fLaC') return 'audio/flac';
+      if (str(4, 4) === 'ftyp') return 'audio/mp4';
+      if (b[0] === 0x1A && b[1] === 0x45) return 'audio/webm';
+      if (str(0, 1) === '<' || str(0, 7) === 'version') throw new Error('not an audio file');
+      const ext = (url.split('?')[0].split('#')[0].split('.').pop() || '').toLowerCase();
+      return ({ mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', opus: 'audio/ogg', wav: 'audio/wav', webm: 'audio/webm', flac: 'audio/flac' })[ext] || 'audio/mpeg';
+    }
     // Download the whole vocal file once (fast, then seeking and sync are instant)
     function vocalLoad(id) {
       const url = vocalMap[id];
@@ -1556,10 +1570,10 @@
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 30000);
       const pr = fetch(url, { signal: ctrl.signal })
-        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
-        .then(blob => {
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(buf => {
           clearTimeout(timer);
-          const o = URL.createObjectURL(blob);
+          const o = URL.createObjectURL(new Blob([buf], { type: vocalMime(buf, url) }));
           vocalBlobs[url] = o;
           vocalOrder.push(url);
           while (vocalOrder.length > 4) {
